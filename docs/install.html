@@ -21,10 +21,12 @@
 
 【第 0 步：确认环境】
 - 确认本机有 Node.js >= 18（运行 node --version）。没有就告诉我，不要继续。
-- 确认当前工作区目录（下面记为 WORKSPACE），这是四个 AI 共享的项目目录。
-- 【极其重要】WORKSPACE 必须是所有 AI 都一样的同一个绝对路径！不要用自己的默认目录。
-  如果已有其他 AI 装过，先查它的 AGENTCORP_WORKSPACE 值，跟它用同一个。
-  工作区不一致将导致谁都看不到谁在线——这是最常见的失败原因。
+- 【极其重要】所有 AI 必须共用同一个共享目录，方便彼此看到对方的文件、互相访问、传任务和保存工作记录。
+  运行 node src/cli.js hub path 得到自动选定的共享目录（默认在 C 盘之后第一个可用盘，
+  名字叫 agent-link，例如 E:/agent-link）。把它记为 WORKSPACE，不要用自己的默认目录。
+  该目录已按 agent 分好子文件夹（workbuddy/ dsh/ zcode/ antigravity/），并初始化为 git 仓库，
+  每个 AI 可以把自己的文件放进去，也能读其他 AI 的文件。
+  工作区不一致将导致谁都看不到谁——这是最常见的失败原因。
   不确定就运行 node src/cli.js doctor 查看各家指向哪里。
 
 【第 1 步：获取 AgentCorp】
@@ -34,6 +36,7 @@
 - 如果你的环境无法 git clone，告诉我，我会改用 GitHub API（https://api.github.com/repos/postskt/agentcorp/zipball/main）获取文件。
 
 【第 2 步：初始化共享工作区】
+- 运行：node src/cli.js hub init   创建 agent-link 目录（自动选盘、分 agent 子目录、git 仓库）
 - 运行：AGENTCORP_WORKSPACE=&lt;WORKSPACE&gt; node src/cli.js init
 - 这会在 &lt;WORKSPACE&gt;/.agentcorp 下创建状态文件，四个 AI 共用它。
 
@@ -59,9 +62,17 @@
 告诉我：平台名、角色、是否 online/installed、共享工作区路径、以及 roster 里其他 AI 的在线情况。
 如果任何一步失败，原样报错信息给我，不要自行跳过。
 
+【第 6 步：共享文件与保存（装好后随时可用）】
+- hub_files：列出任意 agent 工作区的文件（agent 参数指定谁，不填列整个 hub）。
+- hub_file_read / hub_file_write：读写共享目录里的任意文件——你能看到其他 AI 的所有文件。
+- worklog_add：把工作记录写到共享的 worklog/按日期归档。
+- 保存与上传：repo_save 提交到 git；需要上传 GitHub 时先 repo_remote_set 设置远端，再 repo_sync 推送。
+  这样工作记录和重要文件既在 git 本地留档，也能上传 GitHub。
+
 【注意事项】
 - 不要修改其他 AI 的配置文件，只改你自己的。
 - 不要删除 .agentcorp 目录，那是共享状态。
+- 自己的产物放进自己名字的子文件夹（如 dsh/），要给别人看就放 shared/ 或直接写进对方子目录。
 - 上下文保持轻量：默认只看任务摘要，需要详情再用 task_get 拉取。</pre>
   <div class="note">完整说明见仓库 README 与 INSTALL_PROMPT.md：https://github.com/postskt/agentcorp</div>
 </div>
