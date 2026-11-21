@@ -111,6 +111,10 @@ export function buildServer() {
     agent, role: z.enum(['ceo', 'pm', 'coder', 'reviewer', 'tester']).optional(),
   }, async (args) => call(() => ({ announced: true, roster: a.agentRoster() }), args));
   server.tool('agent_roster', 'Which AIs are installed and which are online right now.', {}, async () => call(a.agentRoster));
+  server.tool('agent_doctor', 'Diagnose why agents cannot see each other (workspace drift, not installed).', {}, async () => call(a.doctor));
+  server.tool('workspace_align', 'Point every installed agent at one shared workspace so heartbeats meet.', {
+    workspace: z.string().optional(),
+  }, async (args) => call(a.workspaceAlign, args));
 
   // ---- observability ----
   server.tool('org_status', 'Company-wide status snapshot.', {}, async () => call(a.orgStatus));
