@@ -34,6 +34,14 @@ CEO（你，只定方向）
 - **共享工作区**：四家读写同一个目录，`file_lock`/`file_unlock` 防止并发改同一文件。
 - **跟着 Agent 走**：每个 Agent 启动一个 AgentCorp stdio 进程，状态通过共享目录同步，无需常驻后台服务。
 
+## 一键安装（发给 AI 就能自装）
+
+不用手动配置——把下面这个链接发给任意一个 AI，让它"按链接里的指令安装 AgentCorp"，它会自己克隆、配置、接入并自检：
+
+**👉 `https://raw.githubusercontent.com/postskt/agentcorp/main/INSTALL_PROMPT.md`**
+
+完整说明见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
+
 ## 快速开始
 
 ```bash
@@ -61,7 +69,9 @@ node src/cli.js config antigravity
 **PM**：`task_plan` `task_route` `task_assign`
 **Worker**：`task_list` `task_get` `task_claim` `task_submit` `file_lock` `file_unlock`
 **Reviewer**：`task_list_review` `review_submit`
-**通用**：`workspace_scan` `agent_message` `dashboard_data` `file_content` `git_diff`
+**在线名单**：`agent_hello`（上线报到） `agent_roster`（谁装了/谁在线）
+
+**通用**：`workspace_scan` `agent_message` `dashboard_open` `dashboard_data` `file_content` `git_diff`
 **看板**：`dashboard_open`　**更新**：`update_check` `update_apply` `plugin_status` `plugin_update`（共 27 个工具）
 
 ## 可视化看板（网页）
