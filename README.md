@@ -38,9 +38,11 @@ CEO（你，只定方向）
 
 不用手动配置——把下面这个链接发给任意一个 AI，让它"按链接里的指令安装 AgentCorp"，它会自己克隆、配置、接入并自检：
 
-**👉 `https://raw.githubusercontent.com/postskt/agentcorp/main/INSTALL_PROMPT.md`**
+**👉 `https://postskt.github.io/agentcorp/install.html`**（安装页，AI 读它即可自装）
 
-完整说明见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
+备用直链：`https://raw.githubusercontent.com/postskt/agentcorp/main/INSTALL_PROMPT.md`
+
+访问 `https://postskt.github.io/agentcorp/` 看图文说明。完整文本见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
 
 ## 快速开始
 
