@@ -113,12 +113,40 @@ switch (cmd) {
     }
     break;
   }
+  case 'doctor': {
+    const { doctor } = await import('./updater.js');
+    const d = doctor(ws);
+    console.log(`=== AgentCorp 诊断 (工作区: ${d.currentWorkspace}) ===`);
+    console.log(`已装 ${d.installedCount} 家 | 工作区一致: ${d.aligned ? '是 ✓' : '否 ✗'}`);
+    console.log('\n各 Agent 配置:');
+    for (const p of d.plugins) {
+      const mark = p.agentcorpRegistered ? (p.workspace && path.resolve(p.workspace) === path.resolve(ws) ? '✓' : '⚠') : '✗';
+      console.log(`  ${mark} ${p.id.padEnd(12)} ${p.agentcorpRegistered ? (p.workspace || '(未设工作区)') : '未安装'}`);
+    }
+    if (d.problems.length) {
+      console.log('\n⚠ 发现的问题:');
+      for (const pr of d.problems) console.log(`  - ${pr}`);
+      console.log(`\n修复: ${d.fix}`);
+    } else {
+      console.log('\n✓ 所有已安装 Agent 共享同一工作区。打开各家调用 agent_hello 即可上线。');
+    }
+    break;
+  }
+  case 'align': {
+    const { alignWorkspaces } = await import('./updater.js');
+    const target = process.argv[3] || ws;
+    const r = alignWorkspaces(target);
+    console.log(JSON.stringify(r, null, 2));
+    break;
+  }
   case 'help':
   default:
     console.log(`AgentCorp ${VERSION} — AI collaboration bus
 Usage:
   agentcorp init                 Initialize .agentcorp in current workspace
   agentcorp status               Show company status
+  agentcorp doctor               Diagnose why agents can't see each other
+  agentcorp align [workspace]    Unify all installed agents onto one workspace
   agentcorp config <platform>    Print MCP config for one platform
   agentcorp install [platform]   Print MCP config for all/one platform
   agentcorp web [port]           Start web dashboard (default 7788)
