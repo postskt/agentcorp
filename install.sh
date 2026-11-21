@@ -24,13 +24,14 @@ hub_root() {
 }
 
 install_dsh() {
-  echo "[DSH] Installing native plugin via plugin manager..."
+  echo "[DSH] Installing native plugin..."
   if command -v dsh >/dev/null 2>&1; then
     dsh plugin --profile web add github:postskt/agentcorp
+    echo "[DSH] Done. Restart DSH; the plugin appears in Plugins page."
   else
-    npx -y @deepseek-ai/dsh plugin --profile web add github:postskt/agentcorp
+    echo "[DSH] No 'dsh' command on PATH (desktop build bundles it internally)."
+    echo "[DSH] Please install via the UI: Plugins -> Add plugin -> github:postskt/agentcorp -> Install"
   fi
-  echo "[DSH] Done. Restart DSH; the plugin appears in Plugins page."
 }
 
 install_skill() {
