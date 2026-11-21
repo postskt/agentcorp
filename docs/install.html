@@ -22,6 +22,10 @@
 【第 0 步：确认环境】
 - 确认本机有 Node.js >= 18（运行 node --version）。没有就告诉我，不要继续。
 - 确认当前工作区目录（下面记为 WORKSPACE），这是四个 AI 共享的项目目录。
+- 【极其重要】WORKSPACE 必须是所有 AI 都一样的同一个绝对路径！不要用自己的默认目录。
+  如果已有其他 AI 装过，先查它的 AGENTCORP_WORKSPACE 值，跟它用同一个。
+  工作区不一致将导致谁都看不到谁在线——这是最常见的失败原因。
+  不确定就运行 node src/cli.js doctor 查看各家指向哪里。
 
 【第 1 步：获取 AgentCorp】
 - 从 https://github.com/postskt/agentcorp 获取代码到本地，例如：
