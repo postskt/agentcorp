@@ -42,14 +42,50 @@ function configFor(platform) {
 
 switch (cmd) {
   case 'init': {
+    const hub = await import('./workspace-hub.js');
+    const hubRoot = process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
+    const layout = hub.initHub(hubRoot);
     const store = new Store(ws);
     const s = store.readState();
     s.workspace = ws;
     store.writeState(s);
     console.log(`AgentCorp ${VERSION} initialized.`);
-    console.log(`Workspace: ${ws}`);
-    console.log(`State dir: ${store.dir}`);
-    console.log('Now add the MCP server to each agent (see: agentcorp config <platform>).');
+    console.log(`Shared hub : ${layout.root}`);
+    console.log(`  subfolders: ${layout.dirs.join(' ')}`);
+    console.log(`  git repo  : ${layout.gitInitialized ? 'created' : (fs.existsSync(path.join(layout.root, '.git')) ? 'exists' : 'unavailable')}`);
+    console.log(`Workspace  : ${ws}`);
+    console.log(`State dir  : ${store.dir}`);
+    console.log('All agents should use the SAME hub root as their AGENTCORP_WORKSPACE.');
+    console.log('Add the MCP server to each agent (see: agentcorp config <platform>).');
+    break;
+  }
+  case 'hub': {
+    const hub = await import('./workspace-hub.js');
+    const root = process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
+    const sub = process.argv[3] || 'info';
+    if (sub === 'init') {
+      console.log(JSON.stringify(hub.initHub(root), null, 2));
+    } else if (sub === 'path') {
+      console.log(root);
+    } else if (sub === 'files') {
+      const agent = process.argv[4];
+      console.log(JSON.stringify(hub.hubTree({ root, agent, depth: Number(process.argv[5]) || 3 }), null, 2));
+    } else {
+      console.log(JSON.stringify({ root, exists: fs.existsSync(root),
+        subfolders: Object.keys(AGENTS).map(id => `${id}/`).concat(['inbox/', 'worklog/', 'shared/']) }, null, 2));
+    }
+    break;
+  }
+  case 'repo': {
+    const hub = await import('./workspace-hub.js');
+    const root = process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
+    const sub = process.argv[3] || 'status';
+    if (sub === 'status') console.log(JSON.stringify(hub.repoStatus({ root }), null, 2));
+    else if (sub === 'commit') console.log(JSON.stringify(hub.repoCommit({ root, message: process.argv[4] }), null, 2));
+    else if (sub === 'log') console.log(JSON.stringify(hub.repoLog({ root, limit: Number(process.argv[4]) || 10 }), null, 2));
+    else if (sub === 'remote') console.log(JSON.stringify(hub.repoSetRemote({ root, url: process.argv[4] }), null, 2));
+    else if (sub === 'sync') console.log(JSON.stringify(hub.repoSync({ root, message: process.argv[4] }), null, 2));
+    else console.log('Usage: agentcorp repo status|commit [msg]|log|remote <url>|sync [msg]');
     break;
   }
   case 'status': {
@@ -134,16 +170,21 @@ switch (cmd) {
   }
   case 'align': {
     const { alignWorkspaces } = await import('./updater.js');
-    const target = process.argv[3] || ws;
+    const hub = await import('./workspace-hub.js');
+    // Default target = the auto-picked shared hub (next drive after C:).
+    const target = process.argv[3] || process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
+    hub.initHub(target); // ensure layout exists before pointing agents at it
     const r = alignWorkspaces(target);
-    console.log(JSON.stringify(r, null, 2));
+    console.log(JSON.stringify({ ...r, target }, null, 2));
     break;
   }
   case 'help':
   default:
     console.log(`AgentCorp ${VERSION} — AI collaboration bus
 Usage:
-  agentcorp init                 Initialize .agentcorp in current workspace
+  agentcorp init                 Init shared hub (next drive after C:) + .agentcorp
+  agentcorp hub [path|init|files] Show/create shared hub (agent-link)
+  agentcorp repo status|commit|log|remote|sync   Save/upload the shared hub to git
   agentcorp status               Show company status
   agentcorp doctor               Diagnose why agents can't see each other
   agentcorp align [workspace]    Unify all installed agents onto one workspace
