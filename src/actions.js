@@ -7,6 +7,10 @@ import { createTask, taskSummary, findTasks } from './tasks.js';
 import { routingAdvice, suggestAssignee, detectConflicts } from './router.js';
 import { TASK_STATUS, TASK_TYPE, AGENTS, VERSION, PRESENCE_TTL_MS, now } from './constants.js';
 import { pluginStatus, doctor as doctorRaw, alignWorkspaces } from './updater.js';
+import {
+  pickHubRoot, initHub, hubTree, hubRead, hubWrite, worklogWrite,
+  repoStatus, repoCommit, repoLog, repoSetRemote, repoSync,
+} from './workspace-hub.js';
 
 const err = (message) => ({ error: message });
 
@@ -72,12 +76,48 @@ export function createActions(store, workspace) {
     return d;
   }
 
-  function workspaceAlign({ workspace: target }) {
-    const ws = target || workspace;
+  function workspaceAlign({ workspace: target } = {}) {
+    const ws = target || HUB;
+    initHub(ws); // ensure the shared layout exists at the target
     const r = alignWorkspaces(ws);
     store.emit('workspaces_aligned', { workspace: ws, changed: r.changed }, 'ceo');
     return { ...r, message: `Aligned ${r.changed} agent(s) to ${ws}. Restart each agent for the change to take effect.` };
   }
+
+  // ---- shared hub: layout, cross-agent files, worklog, git ----
+  const HUB = process.env.AGENTCORP_HUB_ROOT ? path.resolve(process.env.AGENTCORP_HUB_ROOT) : pickHubRoot();
+
+  function hubInit({ root } = {}) {
+    const r = initHub(root || HUB);
+    store.emit('hub_initialized', { root: r.root, dirs: r.dirs.length }, 'system');
+    return r;
+  }
+  function hubInfo() {
+    return {
+      root: HUB, hubName: 'agent-link',
+      layout: Object.keys(AGENTS).map(id => `${id}/`) + ['inbox/', 'worklog/', 'shared/', '.agentcorp/'],
+      exists: fs.existsSync(HUB),
+      gitRepo: fs.existsSync(path.join(HUB, '.git')),
+      note: 'All agents share this root. Any agent can read/write any file here; .agentcorp is the comms/task state.',
+    };
+  }
+  function hubFiles({ agent, depth, content } = {}) { return hubTree({ root: HUB, agent, depth, content }); }
+  function hubFileRead({ file, maxBytes } = {}) { return hubRead({ root: HUB, file, maxBytes }); }
+  function hubFileWrite({ file, content, agent } = {}) {
+    const r = hubWrite({ root: HUB, file, content, agent });
+    if (r.ok) store.emit('hub_file_written', { file, agent: agent || null }, agent || 'system');
+    return r;
+  }
+  function worklogAdd({ agent, text, file } = {}) {
+    const r = worklogWrite({ root: HUB, agent, text, file });
+    if (r.ok) store.emit('worklog_added', { file: r.path, agent }, agent || 'system');
+    return r;
+  }
+  function repoInfo() { return repoStatus({ root: HUB }); }
+  function repoSave({ message } = {}) { return repoCommit({ root: HUB, message }); }
+  function repoHistory({ limit } = {}) { return repoLog({ root: HUB, limit }); }
+  function repoRemoteSet({ url } = {}) { return repoSetRemote({ root: HUB, url }); }
+  function repoPush({ message } = {}) { return repoSync({ root: HUB, message }); }
 
   function orgInfo() {
     const s = store.readState();
@@ -374,5 +414,7 @@ export function createActions(store, workspace) {
     taskSubmit, taskListReview, reviewSubmit, orgEscalate, orgDecide, orgStatus,
     orgEvents, workspaceScan, fileLock, fileUnlock, agentMessage, dashboard,
     fileContent, gitDiff, touchPresence, agentRoster, doctor, workspaceAlign,
+    hubInit, hubInfo, hubFiles, hubFileRead, hubFileWrite, worklogAdd,
+    repoInfo, repoSave, repoHistory, repoRemoteSet, repoPush,
   };
 }
