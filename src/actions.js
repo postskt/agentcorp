@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { createTask, taskSummary, findTasks } from './tasks.js';
 import { routingAdvice, suggestAssignee, detectConflicts } from './router.js';
 import { TASK_STATUS, TASK_TYPE, AGENTS, VERSION, PRESENCE_TTL_MS, now } from './constants.js';
-import { pluginStatus } from './updater.js';
+import { pluginStatus, doctor as doctorRaw, alignWorkspaces } from './updater.js';
 
 const err = (message) => ({ error: message });
 
@@ -63,6 +63,20 @@ export function createActions(store, workspace) {
       ttlMs: PRESENCE_TTL_MS,
       note: 'online = called a tool recently; installed = MCP config entry present',
     };
+  }
+
+  function doctor() {
+    const d = doctorRaw(workspace);
+    d.onlineCount = agentRoster().onlineCount;
+    d.roster = agentRoster();
+    return d;
+  }
+
+  function workspaceAlign({ workspace: target }) {
+    const ws = target || workspace;
+    const r = alignWorkspaces(ws);
+    store.emit('workspaces_aligned', { workspace: ws, changed: r.changed }, 'ceo');
+    return { ...r, message: `Aligned ${r.changed} agent(s) to ${ws}. Restart each agent for the change to take effect.` };
   }
 
   function orgInfo() {
@@ -359,6 +373,6 @@ export function createActions(store, workspace) {
     orgInfo, orgGoal, taskPlan, taskRoute, taskAssign, taskList, taskGet, taskClaim,
     taskSubmit, taskListReview, reviewSubmit, orgEscalate, orgDecide, orgStatus,
     orgEvents, workspaceScan, fileLock, fileUnlock, agentMessage, dashboard,
-    fileContent, gitDiff, touchPresence, agentRoster,
+    fileContent, gitDiff, touchPresence, agentRoster, doctor, workspaceAlign,
   };
 }
