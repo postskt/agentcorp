@@ -111,6 +111,37 @@ export function buildServer() {
     agent, role: z.enum(['ceo', 'pm', 'coder', 'reviewer', 'tester']).optional(),
   }, async (args) => call(() => ({ announced: true, roster: a.agentRoster() }), args));
   server.tool('agent_roster', 'Which AIs are installed and which are online right now.', {}, async () => call(a.agentRoster));
+
+  // ---- shared hub (one folder per agent, all files mutually accessible) ----
+  server.tool('hub_init', 'Create the shared agent-link hub on the next drive after C:, with a subfolder per agent and a git repo.', {
+    root: z.string().optional(),
+  }, async (args) => call(a.hubInit, args));
+  server.tool('hub_info', 'Show the shared hub root and layout.', {}, async () => call(a.hubInfo));
+  server.tool('hub_files', 'List files in any agent workspace (or the whole hub). All agents share this root.', {
+    agent, depth: z.number().optional(), content: z.boolean().optional(),
+  }, async (args) => call(a.hubFiles, args));
+  server.tool('hub_file_read', 'Read any file in the shared hub on demand.', {
+    file: z.string(), maxBytes: z.number().optional(),
+  }, async (args) => call(a.hubFileRead, args));
+  server.tool('hub_file_write', 'Write a file anywhere in the shared hub (path limited to hub root).', {
+    file: z.string(), content: z.string(), agent: agent.optional(),
+  }, async (args) => call(a.hubFileWrite, args));
+  server.tool('worklog_add', 'Append a timestamped work note to the shared worklog.', {
+    agent: agent.optional(), text: z.string(), file: z.string().optional(),
+  }, async (args) => call(a.worklogAdd, args));
+  server.tool('repo_info', 'Show git status/branch/remote of the shared hub.', {}, async () => call(a.repoInfo));
+  server.tool('repo_save', 'Commit all shared-hub changes (worklog and important files) to git.', {
+    message: z.string().optional(),
+  }, async (args) => call(a.repoSave, args));
+  server.tool('repo_history', 'Show recent git commits in the shared hub.', {
+    limit: z.number().optional(),
+  }, async (args) => call(a.repoHistory, args));
+  server.tool('repo_remote_set', 'Set the GitHub remote URL for the shared hub.', {
+    url: z.string(),
+  }, async (args) => call(a.repoRemoteSet, args));
+  server.tool('repo_sync', 'Commit and push the shared hub to GitHub.', {
+    message: z.string().optional(),
+  }, async (args) => call(a.repoPush, args));
   server.tool('agent_doctor', 'Diagnose why agents cannot see each other (workspace drift, not installed).', {}, async () => call(a.doctor));
   server.tool('workspace_align', 'Point every installed agent at one shared workspace so heartbeats meet.', {
     workspace: z.string().optional(),
