@@ -1,0 +1,62 @@
+# AgentCorp 一键安装提示词
+
+把本文件的链接发给任意一个 AI Agent（WorkBuddy / DeepSeek Harness / ZCode / Google Antigravity），
+它照着下面的指令做，就能把自己接入 AgentCorp 协作总线并完成自检。
+
+**分享链接：**
+`https://raw.githubusercontent.com/postskt/agentcorp/main/INSTALL_PROMPT.md`
+
+---
+
+## 给 AI 的指令（从这里开始复制）
+
+```
+请帮我安装 AgentCorp 协作总线，让本 Agent 接入一个多 AI 协作网络。请严格按步骤执行，并把每步结果告诉我。
+
+【第 0 步：确认环境】
+- 确认本机有 Node.js >= 18（运行 node --version）。没有就告诉我，不要继续。
+- 确认当前工作区目录（下面记为 WORKSPACE），这是四个 AI 共享的项目目录。
+
+【第 1 步：获取 AgentCorp】
+- 从 https://github.com/postskt/agentcorp 获取代码到本地，例如：
+  git clone https://github.com/postskt/agentcorp.git
+- 进入 agentcorp 目录，运行 npm install 安装依赖。
+- 如果你的环境无法 git clone，告诉我，我会改用 GitHub API 获取文件。
+
+【第 2 步：初始化共享工作区】
+- 运行：AGENTCORP_WORKSPACE=<WORKSPACE> node src/cli.js init
+- 这会在 <WORKSPACE>/.agentcorp 下创建状态文件，四个 AI 共用它。
+
+【第 3 步：把自己注册进 MCP 配置】
+先判断你自己是哪个平台（WorkBuddy / DSH / ZCode / Antigravity），只改你自己的配置文件：
+- 运行：AGENTCORP_WORKSPACE=<WORKSPACE> node src/cli.js config <平台名>
+  得到 agentcorp 的 MCP 配置片段。
+- 把该片段合并进你自己的 MCP 配置文件，保留已有的其他 server 配置，不要覆盖：
+  * WorkBuddy : ~/.workbuddy/mcp.json        （写入后需在连接器页面点 Trust 启用）
+  * DSH       : 你的 DSH MCP 配置（可能是 ~/.deepseek-harness/mcp.json 或插件目录）
+  * ZCode     : ZCode 的 MCP 配置            （形如 mcpServers.agentcorp）
+  * Antigravity: ~/.gemini/config/mcp_config.json
+- 配置里的 args[0] 必须是 agentcorp/src/index.js 的绝对路径，env.AGENTCORP_WORKSPACE 必须是 <WORKSPACE> 的绝对路径。
+
+【第 4 步：验证接入】
+- 重启你自己（或重新加载 MCP 配置），让新工具生效。
+- 调用 agent_hello，参数 agent 填你的平台名，role 填你担任的角色（pm/coder/reviewer/tester）。
+- 调用 agent_roster，确认名单里你的条目 online=true、installed=true。
+- 调用 org_info，确认返回 product=AgentCorp、版本和共享工作区路径。
+- 调用 org_status 看一眼公司当前状态。
+
+【第 5 步：汇报】
+告诉我：平台名、角色、是否 online/installed、共享工作区路径、以及 roster 里其他 AI 的在线情况。
+如果任何一步失败，原样报错信息给我，不要自行跳过。
+
+【注意事项】
+- 不要修改其他 AI 的配置文件，只改你自己的。
+- 不要删除 .agentcorp 目录，那是共享状态。
+- 上下文保持轻量：默认只看任务摘要，需要详情再用 task_get 拉取。
+```
+
+## 给人的速查
+
+- 想让某个 AI 自安装：把上面的分享链接发给它，说"按这个链接里的指令安装 AgentCorp"。
+- 想手动装：见 [README 快速开始](README.md) 和各平台 [适配说明](adapters/)。
+- 装完看谁在线：让任意 AI 调用 `agent_roster`，或打开网页看板 `node src/cli.js web`。
