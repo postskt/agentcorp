@@ -65,6 +65,17 @@ node src/cli.js config antigravity
 
 详见 [端到端演示](examples/walkthrough.md) 和 [角色提示词](prompts/)。
 
+### 看不到其他 AI 上线？
+
+最常见原因是**各家的工作区不一致**——每个 Agent 配置了不同的 `AGENTCORP_WORKSPACE`，读写不同的 `.agentcorp/state.json`，心跳永远碰不到一起。排查与修复：
+
+```bash
+node src/cli.js doctor              # 列出每家装没装、指向哪个工作区、是否一致
+node src/cli.js align <共享目录>     # 一键把已装的 Agent 统一到同一工作区（改完需重启各家）
+```
+
+或者在 Agent 里调用 `agent_doctor`（诊断）和 `workspace_align`（修复）。统一工作区后，让每个 Agent 打开时调用 `agent_hello` 报到即可上线。注意：光是"安装"不会自动上线，在线需要真的调用工具。
+
 ## MCP 工具一览
 
 **CEO**：`org_info` `org_goal` `org_status` `org_events` `org_escalate` `org_decide`
