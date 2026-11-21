@@ -17,6 +17,10 @@ const a = createActions(store, WS);
 
 function call(fn, args = {}) {
   try {
+    // Every tool call that carries an agent identity is a heartbeat. This makes
+    // "online" mean "actually used the bus recently", not just "configured".
+    const who = args.agent || args.reviewer || args.from;
+    if (who && AGENTS[who]) a.touchPresence(who, args.role);
     const result = fn(args);
     if (result?.error) return { content: [{ type: 'text', text: `ERROR: ${result.error}` }], isError: true };
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
@@ -101,6 +105,12 @@ export function buildServer() {
   server.tool('org_decide', 'CEO resolves an escalated task.', {
     taskId: z.string(), decision: z.enum(['assign', 'rework', 'drop']), agent: agent.optional(), note: z.string().optional(),
   }, async (args) => call(a.orgDecide, args));
+
+  // ---- presence / roster ----
+  server.tool('agent_hello', 'Announce yourself as online (call on startup, then any tool call keeps you online).', {
+    agent, role: z.enum(['ceo', 'pm', 'coder', 'reviewer', 'tester']).optional(),
+  }, async (args) => call(() => ({ announced: true, roster: a.agentRoster() }), args));
+  server.tool('agent_roster', 'Which AIs are installed and which are online right now.', {}, async () => call(a.agentRoster));
 
   // ---- observability ----
   server.tool('org_status', 'Company-wide status snapshot.', {}, async () => call(a.orgStatus));
