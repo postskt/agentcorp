@@ -36,13 +36,34 @@ CEO（你，只定方向）
 - **工作记录与 Git**：`worklog_add` 按日期归档到共享 worklog/；Hub 是 git 仓库，`repo_save` 提交、`repo_remote_set`+`repo_sync` 上传到 GitHub。
 - **跟着 Agent 走**：每个 Agent 启动一个 AgentCorp stdio 进程，状态通过共享目录同步，无需常驻后台服务。
 
-## 一键安装（发给 AI 就能自装）
+## 一键安装（原生插件，一条命令，不消耗 token）
 
-不用手动配置——把下面这个链接发给任意一个 AI，让它"按链接里的指令安装 AgentCorp"，它会自己克隆、配置、接入并自检：
+AgentCorp 现在既是 **DSH 原生插件**（`dsh.bundle`，插件界面可见、有版本、可更新），也是标准 MCP Server。安装由宿主/脚本直接完成，**不经过 AI、不消耗模型 token**。
 
-**👉 `https://postskt.github.io/agentcorp/install.html`**（安装页，AI 读它即可自装）
+### DSH（推荐，DSH 界面里能看到插件）
+```bash
+npx -y @deepseek-ai/dsh plugin --profile web add github:postskt/agentcorp
+```
+或在 DSH 界面：**插件 → 添加插件 → 输入 `github:postskt/agentcorp` → 安装**，重启后「插件」页即可看到 AgentCorp。更新用 `dsh plugin --profile web add github:postskt/agentcorp@latest` 或界面上的「更新」按钮。
 
-备用直链：`https://raw.githubusercontent.com/postskt/agentcorp/main/INSTALL_PROMPT.md`
+### ZCode / WorkBuddy / Antigravity（技能/插件清单 + MCP）
+```bash
+git clone --depth 1 https://github.com/postskt/agentcorp.git
+cd agentcorp
+bash install.sh zcode          # 或 workbuddy / antigravity / all
+```
+该脚本把对应平台的原生技能/插件清单复制到位，无需 AI 参与。
+
+### 备用：发给 AI 自装（会消耗少量 token）
+**`https://postskt.github.io/agentcorp/install.html`** — 只有在上面命令不可用时才用这种方式。
+
+> 注意：早期手动改 `mcp.json` 的方式仍然有效，但它**不是标准插件**——DSH 插件界面看不到，也谈不上版本更新。要"插件界面可见 + 一键更新"，请用上面的原生插件方式。
+
+## 双形态说明
+- `index.js` — DSH 原生插件入口（`apply(ctx)` 注册 38 个工具，底层复用 actions 核心）
+- `src/index.js` — MCP stdio 入口（WorkBuddy / ZCode / Antigravity 用，42 个工具）
+- `cordis.patch.yml` + `locale/` — DSH bundle 注册与界面文案
+- `integrations/` — 其余三家的原生技能/插件清单
 
 访问 `https://postskt.github.io/agentcorp/` 看图文说明。完整文本见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
 
