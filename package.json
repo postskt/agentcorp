@@ -1,9 +1,25 @@
 {
   "name": "agentcorp",
-  "version": "0.1.0",
-  "description": "A protocol-first collaboration bus that connects WorkBuddy, DeepSeek Harness, ZCode and Google Antigravity into one AI company.",
+  "version": "0.2.0",
+  "description": "A native DSH plugin + MCP server that connects WorkBuddy, DeepSeek Harness, ZCode and Google Antigravity into one AI company.",
   "type": "module",
-  "main": "src/index.js",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./mcp": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "locale/",
+    "src/",
+    "prompts/",
+    "public/",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "agentcorp": "src/cli.js"
   },
@@ -11,6 +27,14 @@
     "start": "node src/index.js",
     "cli": "node src/cli.js",
     "test": "node --test test/*.test.js"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2 <0.3.0"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -21,17 +45,20 @@
   },
   "license": "MIT",
   "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
     "mcp",
     "agent",
     "collaboration",
     "multi-agent",
     "workbuddy",
-    "deepseek",
     "zcode",
     "antigravity"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/postskt/agentcorp.git"
-  }
+    "url": "git+https://github.com/postskt/agentcorp.git"
+  },
+  "homepage": "https://postskt.github.io/agentcorp/"
 }
