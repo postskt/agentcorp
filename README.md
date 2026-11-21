@@ -41,10 +41,13 @@ CEO（你，只定方向）
 AgentCorp 现在既是 **DSH 原生插件**（`dsh.bundle`，插件界面可见、有版本、可更新），也是标准 MCP Server。安装由宿主/脚本直接完成，**不经过 AI、不消耗模型 token**。
 
 ### DSH（推荐，DSH 界面里能看到插件）
+**界面安装（桌面版主路径）**：DSH → **插件 → 添加插件 → 输入 `github:postskt/agentcorp` → 安装**。重启后「插件」页出现 AgentCorp，更新用卡片上的「更新」按钮。
+
+**命令行（仅当本机有 `dsh` 命令时）**：
 ```bash
-npx -y @deepseek-ai/dsh plugin --profile web add github:postskt/agentcorp
+dsh plugin --profile web add github:postskt/agentcorp
 ```
-或在 DSH 界面：**插件 → 添加插件 → 输入 `github:postskt/agentcorp` → 安装**，重启后「插件」页即可看到 AgentCorp。更新用 `dsh plugin --profile web add github:postskt/agentcorp@latest` 或界面上的「更新」按钮。
+> 桌面版本身的 `dsh` CLI 由应用自带，通常不在系统 PATH；`@deepseek-ai/dsh` 不在公共 npm，所以 `npx ...` 方式不可用——请用界面安装。
 
 ### ZCode / WorkBuddy / Antigravity（技能/插件清单 + MCP）
 ```bash
