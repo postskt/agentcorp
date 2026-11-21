@@ -24,10 +24,9 @@
   <div class="hi">✅ 原生插件安装由宿主/脚本直接完成，不经过 AI、不消耗模型 token。装完在 DSH「插件」页可见、有版本、可一键更新。</div>
 
   <h2>1. DSH（DeepSeek Harness）— 推荐</h2>
-  <p style="font-size:13px;color:#9fb0c8">命令行一条命令：</p>
-  <pre>npx -y @deepseek-ai/dsh plugin --profile web add github:postskt/agentcorp</pre>
-  <p style="font-size:13px;color:#9fb0c8">或界面操作：插件 → 添加插件 → 输入 <code>github:postskt/agentcorp</code> → 安装。重启 DSH 后「插件」页出现 AgentCorp。</p>
-  <p style="font-size:13px;color:#9fb0c8">更新：<code>dsh plugin --profile web add github:postskt/agentcorp@latest</code> 或界面「更新」按钮。</p>
+  <p style="font-size:13px;color:#9fb0c8"><b>界面安装（桌面版主路径）</b>：DSH → 插件 → 添加插件 → 输入 <code>github:postskt/agentcorp</code> → 安装。重启后「插件」页出现 AgentCorp。</p>
+  <pre>插件 → 添加插件 → github:postskt/agentcorp → 安装</pre>
+  <p style="font-size:13px;color:#9fb0c8">更新用插件卡片上的「更新」按钮。命令行 <code>dsh plugin --profile web add github:postskt/agentcorp</code> 仅当本机 PATH 里有 <code>dsh</code> 时可用（桌面版自带但通常不在 PATH；<code>npx @deepseek-ai/dsh</code> 不可用）。</p>
 
   <h2>2. ZCode / WorkBuddy / Antigravity（技能/插件清单 + MCP）</h2>
   <pre>git clone --depth 1 https://github.com/postskt/agentcorp.git
