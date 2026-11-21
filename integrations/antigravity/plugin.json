@@ -1,0 +1,34 @@
+{
+  "name": "agentcorp-plugin",
+  "displayName": "AgentCorp — AI Collaboration Bus",
+  "version": "0.2.0",
+  "description": "Connect Antigravity with WorkBuddy, DSH and ZCode into one AI company. Shared task pipeline, online roster, cross-agent file hub and git-backed worklog.",
+  "repository": "https://github.com/postskt/agentcorp",
+  "license": "MIT",
+  "keywords": [
+    "agentcorp",
+    "collaboration",
+    "multi-agent",
+    "mcp",
+    "workbuddy",
+    "deepseek",
+    "zcode"
+  ],
+  "suggestedPrompts": [
+    "调用 agent_hello 报到并看看现在有哪些 AI 在线",
+    "把当前目标同步到 AgentCorp 协作总线",
+    "查看其他 AI 工作区里的文件，等我确认后再改",
+    "把今天的工作记录提交到共享 git 仓库"
+  ],
+  "mcpServers": {
+    "agentcorp": {
+      "command": "node",
+      "args": ["<AGENTCORP_DIR>/src/index.js"],
+      "env": {
+        "AGENTCORP_WORKSPACE": "<SHARED_WORKSPACE>",
+        "AGENTCORP_HUB_ROOT": "<SHARED_WORKSPACE>"
+      },
+      "transport": "stdio"
+    }
+  }
+}
