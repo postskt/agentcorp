@@ -97,18 +97,102 @@ const PLUGIN_CONFIG_PATH = {
   antigravity: ({ home }) => path.join(home, '.gemini', 'config', 'mcp_config.json'),
 };
 
+function readAgentcorpEntry(p) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const entry = cfg?.mcpServers?.agentcorp;
+    if (!entry) return null;
+    return {
+      registered: true,
+      workspace: entry.env?.AGENTCORP_WORKSPACE || null,
+      serverPath: Array.isArray(entry.args) ? entry.args[0] : null,
+    };
+  } catch { return null; }
+}
+
 function pluginStatus(workspace) {
   const home = process.env.HOME || process.env.USERPROFILE;
   return Object.entries(PLUGIN_CONFIG_PATH).map(([id, fn]) => {
     const p = fn({ home });
-    let installed = false, hasAgentcorp = false;
-    try {
-      installed = fs.existsSync(p);
-      const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
-      hasAgentcorp = !!(cfg.mcpServers && cfg.mcpServers.agentcorp);
-    } catch { /* unreadable */ }
-    return { id, configPath: p, configExists: installed, agentcorpRegistered: hasAgentcorp };
+    let configExists = false;
+    try { configExists = fs.existsSync(p); } catch { /* unreadable */ }
+    const entry = configExists ? readAgentcorpEntry(p) : null;
+    return {
+      id, configPath: p, configExists,
+      agentcorpRegistered: !!entry,
+      workspace: entry?.workspace || null,
+      serverPath: entry?.serverPath || null,
+    };
   });
+}
+
+// Doctor: explain why agents can't see each other. The #1 cause is that each
+// platform was installed with a DIFFERENT AGENTCORP_WORKSPACE, so they read
+// different .agentcorp/state.json files and heartbeats never meet.
+function doctor(workspace) {
+  const plugins = pluginStatus(workspace);
+  const norm = p => p ? path.resolve(String(p)).replace(/\\/g, '/').toLowerCase() : null;
+  const target = norm(workspace);
+  const installed = plugins.filter(p => p.agentcorpRegistered);
+  const groups = {};
+  for (const p of installed) {
+    const key = norm(p.workspace) || '(unset)';
+    (groups[key] ||= []).push(p.id);
+  }
+  const shared = installed.filter(p => norm(p.workspace) === target);
+  const drifted = installed.filter(p => norm(p.workspace) !== target);
+  const problems = [];
+  if (drifted.length) problems.push(
+    `${drifted.length} agent(s) point to a different workspace than the current one (${target}).`
+  );
+  if (Object.keys(groups).length > 1) problems.push(
+    `Installed agents are split across ${Object.keys(groups).length} different workspaces — their heartbeats cannot see each other.`
+  );
+  const notInstalled = plugins.filter(p => !p.agentcorpRegistered).map(p => p.id);
+  if (notInstalled.length) problems.push(`Not installed: ${notInstalled.join(', ')}.`);
+  return {
+    currentWorkspace: workspace,
+    plugins,
+    installedCount: installed.length,
+    onlineCount: null, // filled by actions layer from presence
+    workspaceGroups: groups,
+    aligned: drifted.length === 0,
+    alignedAgents: shared.map(p => p.id),
+    driftedAgents: drifted.map(p => ({ id: p.id, workspace: p.workspace })),
+    notInstalled,
+    problems,
+    fix: problems.length
+      ? 'Run agentcorp align --workspace <shared-dir> (or call workspace_align tool) to point all installed agents at one shared directory, then restart each agent.'
+      : 'All installed agents share the same workspace. Open each agent and call agent_hello to go online.',
+  };
+}
+
+// Align: rewrite every installed agent's AGENTCORP_WORKSPACE to one shared dir.
+// Only touches entries that already have agentcorp registered; never adds to
+// platforms that never installed it. Preserves all other MCP servers.
+function alignWorkspaces(workspace) {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  const results = [];
+  for (const [id, fn] of Object.entries(PLUGIN_CONFIG_PATH)) {
+    const p = fn({ home });
+    if (!fs.existsSync(p)) { results.push({ id, ok: false, reason: 'not installed' }); continue; }
+    try {
+      const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (!cfg?.mcpServers?.agentcorp) { results.push({ id, ok: false, reason: 'agentcorp not registered' }); continue; }
+      cfg.mcpServers.agentcorp.env = cfg.mcpServers.agentcorp.env || {};
+      const before = cfg.mcpServers.agentcorp.env.AGENTCORP_WORKSPACE || null;
+      cfg.mcpServers.agentcorp.env.AGENTCORP_WORKSPACE = workspace;
+      const tmp = `${p}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf8');
+      fs.renameSync(tmp, p);
+      results.push({ id, ok: true, before, after: workspace });
+    } catch (e) { results.push({ id, ok: false, error: String(e.message || e) }); }
+  }
+  // Ensure shared state exists at the target workspace.
+  try {
+    fs.mkdirSync(path.join(workspace, '.agentcorp'), { recursive: true });
+  } catch { /* non-fatal */ }
+  return { workspace, results, changed: results.filter(r => r.ok && r.before !== workspace).length };
 }
 
 // Hot-update = rewrite the agentcorp entry with the current server path/version,
@@ -154,5 +238,5 @@ function startBackgroundChecks({ intervalMs = 30 * 60 * 1000, onUpdate } = {}) {
 
 export {
   VERSION, repoUrl, ownerRepo, checkForUpdates, applyUpdate,
-  pluginStatus, updatePlugin, startBackgroundChecks, localVersion,
+  pluginStatus, updatePlugin, startBackgroundChecks, localVersion, doctor, alignWorkspaces,
 };
