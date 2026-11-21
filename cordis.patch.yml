@@ -1,0 +1,7 @@
+# AgentCorp DSH bundle registration.
+# The row name matches the package name ("agentcorp") so `dsh plugin add
+# github:postskt/agentcorp` resolves and the plugin manager can enable/update it.
+- insert:
+    - id: agentcorp
+      name: 'agentcorp'
+      config: {}
