@@ -5,16 +5,73 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createTask, taskSummary, findTasks } from './tasks.js';
 import { routingAdvice, suggestAssignee, detectConflicts } from './router.js';
-import { TASK_STATUS, TASK_TYPE, AGENTS, VERSION } from './constants.js';
+import { TASK_STATUS, TASK_TYPE, AGENTS, VERSION, PRESENCE_TTL_MS, now } from './constants.js';
+import { pluginStatus } from './updater.js';
 
 const err = (message) => ({ error: message });
 
 export function createActions(store, workspace) {
+  // ---- presence: which AIs are actually installed and online ----
+  // Two independent signals, because "installed" != "running right now":
+  //   installed = the platform's MCP config has an agentcorp entry
+  //   online    = the agent called a tool within PRESENCE_TTL_MS
+  function touchPresence(agentId, role) {
+    if (!agentId || !AGENTS[agentId]) return null;
+    return store.update(s => {
+      s.presence = s.presence || {};
+      const prev = s.presence[agentId] || {};
+      const wasOffline = !prev.lastSeen || (Date.now() - Date.parse(prev.lastSeen)) > PRESENCE_TTL_MS;
+      const rec = {
+        role: role || prev.role || null,
+        firstSeen: prev.firstSeen || now(),
+        lastSeen: now(),
+        calls: (prev.calls || 0) + 1,
+      };
+      s.presence[agentId] = rec;
+      if (wasOffline) store.emit('agent_online', { agent: agentId, role: rec.role }, agentId);
+      return rec;
+    });
+  }
+
+  function agentRoster() {
+    const s = store.readState();
+    const install = {};
+    for (const p of pluginStatus(workspace)) install[p.id] = p;
+    const tasks = Object.values(s.tasks);
+    const ts = Date.now();
+    const agents = Object.keys(AGENTS).map(id => {
+      const p = (s.presence || {})[id] || {};
+      const age = p.lastSeen ? ts - Date.parse(p.lastSeen) : null;
+      const online = age !== null && age <= PRESENCE_TTL_MS;
+      return {
+        id, name: AGENTS[id].name, can: AGENTS[id].can,
+        role: p.role || null,
+        installed: !!(install[id]?.agentcorpRegistered),
+        configPath: install[id]?.configPath || null,
+        online,
+        lastSeen: p.lastSeen || null,
+        firstSeen: p.firstSeen || null,
+        calls: p.calls || 0,
+        activeTasks: tasks.filter(t => t.assignee === id &&
+          [TASK_STATUS.ASSIGNED, TASK_STATUS.DOING].includes(t.status)).length,
+      };
+    });
+    return {
+      agents,
+      onlineCount: agents.filter(a => a.online).length,
+      installedCount: agents.filter(a => a.installed).length,
+      ttlMs: PRESENCE_TTL_MS,
+      note: 'online = called a tool recently; installed = MCP config entry present',
+    };
+  }
+
   function orgInfo() {
     const s = store.readState();
     return {
       product: 'AgentCorp', version: VERSION, workspace,
-      connectedAgents: AGENTS, goal: s.goal, stats: s.stats,
+      connectedAgents: AGENTS,
+      roster: agentRoster(),
+      goal: s.goal, stats: s.stats,
       howto: [
         'CEO: org_goal -> org_status',
         'PM: task_plan -> task_route -> task_assign',
@@ -197,6 +254,7 @@ export function createActions(store, workspace) {
     }
     return {
       goal: s.goal, totalTasks: tasks.length, byStatus, activeWorkByAgent: byAgent,
+      roster: agentRoster(),
       conflicts: detectConflicts(s), locks: store.listLocks(), stats: s.stats,
       recentEvents: store.tailEvents(8).map(e => ({ seq: e.seq, type: e.type, actor: e.actor, ts: e.ts })),
     };
@@ -250,10 +308,13 @@ export function createActions(store, workspace) {
     for (const t of tasks) {
       (columns[t.status] || (columns[t.status] = [])).push(taskSummary(t));
     }
+    const roster = agentRoster();
     const perAgent = {};
-    for (const id of Object.keys(AGENTS)) {
+    for (const a of roster.agents) {
+      const id = a.id;
       perAgent[id] = {
-        name: AGENTS[id].name, can: AGENTS[id].can,
+        name: a.name, can: a.can, online: a.online, installed: a.installed,
+        lastSeen: a.lastSeen, calls: a.calls,
         doing: tasks.filter(t => t.assignee === id && t.status === 'doing').map(taskSummary),
         queued: tasks.filter(t => t.assignee === id && t.status === 'assigned').map(taskSummary),
       };
@@ -265,7 +326,7 @@ export function createActions(store, workspace) {
       }
     }
     return {
-      goal: s.goal, stats: s.stats, columns, perAgent,
+      goal: s.goal, stats: s.stats, columns, perAgent, roster,
       conflicts: detectConflicts(s), locks: store.listLocks(),
       events: store.tailEvents(120), artifacts,
       latestSeq: store.tailEvents(1)[0]?.seq || 0,
@@ -298,6 +359,6 @@ export function createActions(store, workspace) {
     orgInfo, orgGoal, taskPlan, taskRoute, taskAssign, taskList, taskGet, taskClaim,
     taskSubmit, taskListReview, reviewSubmit, orgEscalate, orgDecide, orgStatus,
     orgEvents, workspaceScan, fileLock, fileUnlock, agentMessage, dashboard,
-    fileContent, gitDiff,
+    fileContent, gitDiff, touchPresence, agentRoster,
   };
 }
