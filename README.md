@@ -32,6 +32,8 @@ CEO（你，只定方向）
 - **低存储**：中心只存 KB 级元数据（`state.json` + `events.jsonl`），产物文件只有一份，在共享工作区里。1 万条事件也就几 MB。
 - **低延迟**：stdio MCP 直连；`org_events` 按 seq 增量拉取活动流，可高频轮询做到近实时。
 - **共享工作区**：四家读写同一个目录，`file_lock`/`file_unlock` 防止并发改同一文件。
+- **共享 Hub（agent-link）**：`hub init` 自动在 C 盘之后第一个可用盘（本机为 `E:\agent-link`）创建目录，每个 Agent 一个子文件夹（workbuddy/ dsh/ zcode/ antigravity/）+ inbox/worklog/shared。任意 Agent 可用 `hub_files`/`hub_file_read`/`hub_file_write` 访问其他 Agent 的所有文件。
+- **工作记录与 Git**：`worklog_add` 按日期归档到共享 worklog/；Hub 是 git 仓库，`repo_save` 提交、`repo_remote_set`+`repo_sync` 上传到 GitHub。
 - **跟着 Agent 走**：每个 Agent 启动一个 AgentCorp stdio 进程，状态通过共享目录同步，无需常驻后台服务。
 
 ## 一键安装（发给 AI 就能自装）
@@ -82,7 +84,11 @@ node src/cli.js align <共享目录>     # 一键把已装的 Agent 统一到同
 **PM**：`task_plan` `task_route` `task_assign`
 **Worker**：`task_list` `task_get` `task_claim` `task_submit` `file_lock` `file_unlock`
 **Reviewer**：`task_list_review` `review_submit`
-**在线名单**：`agent_hello`（上线报到） `agent_roster`（谁装了/谁在线）
+**在线名单**：`agent_hello`（上线报到） `agent_roster`（谁装了/谁在线） `agent_doctor`（诊断工作区漂移） `workspace_align`（统一工作区）
+
+**共享 Hub**：`hub_init` `hub_info` `hub_files` `hub_file_read` `hub_file_write` `worklog_add`
+
+**Git 保存/上传**：`repo_info` `repo_save` `repo_history` `repo_remote_set` `repo_sync`
 
 **通用**：`workspace_scan` `agent_message` `dashboard_open` `dashboard_data` `file_content` `git_diff`
 **看板**：`dashboard_open`　**更新**：`update_check` `update_apply` `plugin_status` `plugin_update`（共 27 个工具）
