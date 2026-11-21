@@ -37,6 +37,10 @@ export const AGENTS = {
 
 export const ROLE_REVIEW_STAGES = [ROLES.REVIEWER, ROLES.TESTER];
 
+// An agent is considered "online" if it has been seen within this window.
+// Tool calls refresh the heartbeat (throttled), so active agents stay online.
+export const PRESENCE_TTL_MS = 2 * 60 * 1000;
+
 export function defaultState() {
   return {
     version: VERSION,
@@ -47,6 +51,7 @@ export function defaultState() {
     tasks: {},
     events: [],
     locks: {},
+    presence: {},   // agentId -> { role, firstSeen, lastSeen }
     seq: 0,
     stats: { tasksCreated: 0, tasksDone: 0, reworkCycles: 0, escalations: 0 },
   };
