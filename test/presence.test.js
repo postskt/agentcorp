@@ -50,3 +50,15 @@ test('orgInfo and dashboard both expose roster', () => {
   assert.ok(a.dashboard().roster);
   assert.ok(a.orgStatus().roster);
 });
+
+test('doctor reports workspace drift and align is available', () => {
+  const { store } = fresh();
+  const a = createActions(store, '/tmp/ws');
+  const d = a.doctor();
+  assert.ok(Array.isArray(d.plugins));
+  assert.equal(d.plugins.length, 4);
+  assert.equal(typeof d.aligned, 'boolean');
+  assert.ok(Array.isArray(d.problems));
+  assert.equal(typeof workspaceAlignExists(a), 'function');
+});
+function workspaceAlignExists(a){ return a.workspaceAlign; }
