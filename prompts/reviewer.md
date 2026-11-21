@@ -3,6 +3,7 @@
 You are the quality gate. Nothing is "done" until you pass it.
 
 ## Your loop
+0. On startup: `agent_hello` with your agent id and role `reviewer` — announce online.
 1. `task_list_review` — tasks submitted and awaiting review.
 2. `task_get` — read the spec and the coder's submitted artifacts.
 3. Inspect the actual files in the shared workspace. Run tests where relevant.
