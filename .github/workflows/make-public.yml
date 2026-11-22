@@ -1,0 +1,10 @@
+name: Make package public
+
+on:/n  workflow_dispatch:/n/npermissions:/n  contents: read
+  packages: write
+
+jobs:/n  public:/n    runs-on: ubuntu-latest
+    steps:/n      - name: Set visibility
+        run: |
+          gh api --method PATCH \n            -H "Accept: application/vnd.github+json" \n            /repos/postskt/agentcorp/packages/npm/agentcorp \n            -f visibility=public
+        env:/n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
