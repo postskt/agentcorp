@@ -62,9 +62,6 @@ switch (cmd) {
     console.log(`State dir  : ${store.dir}`);
     console.log('All agents should use the SAME hub root as their AGENTCORP_WORKSPACE.');
     console.log('Add the MCP server to each agent (see: agentcorp config <platform>).');
-    const auto = await import('./autoopen.js');
-    const opened = auto.maybeAutoOpenDashboard({ workspace: hubRoot, trigger: 'cli-init' });
-    console.log(`Dashboard : ${opened.url || '(not started)'}${opened.opened ? ' — opened in browser' : ''}`);
     break;
   }
   case 'hub': {
@@ -133,26 +130,6 @@ switch (cmd) {
     console.log('\nAuto-writing configs is platform-specific; see adapters/*/README.md for one-click snippets.');
     break;
   }
-  case 'web': {
-    const port = Number(process.argv[3] || 7788);
-    const { ensureDashboard } = await import('./web.js');
-    ensureDashboard(port);
-    break;
-  }
-  case 'float': {
-    const port = Number(process.argv[3] || 7788);
-    const { openFloatingDashboard } = await import('./floating.js');
-    console.log(JSON.stringify(await openFloatingDashboard({ port }), null, 2));
-    break;
-  }
-  case 'ui': {
-    const hub = await import('./workspace-hub.js');
-    const root = process.env.AGENTCORP_WORKSPACE || process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
-    const { openNativeDashboard } = await import('./native-ui.js');
-    console.log(JSON.stringify(openNativeDashboard({ workspace: root }), null, 2));
-    if (process.env.AGENTCORP_UI_DEBUG === '1') await new Promise(r => setTimeout(r, 6000));
-    break;
-  }
   case 'update': {
     const sub = process.argv[3] || 'check';
     const u = await import('./updater.js');
@@ -213,9 +190,6 @@ Usage:
   agentcorp align [workspace]    Unify all installed agents onto one workspace
   agentcorp config <platform>    Print MCP config for one platform
   agentcorp install [platform]   Print MCP config for all/one platform
-  agentcorp web [port]           Start web dashboard (default 7788)
-  agentcorp ui                   Open the native always-on-top desktop widget
-  agentcorp float [port]         Open the browser-based floating fallback
   agentcorp update check         Check GitHub for a newer version
   agentcorp update apply         Apply core update (git pull)
   agentcorp update plugins       Show plugin registration status

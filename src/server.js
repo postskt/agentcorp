@@ -1,7 +1,8 @@
 // AgentCorp MCP Server — the collaboration bus.
 // Every capability is exposed as an MCP tool so any connected agent (WorkBuddy,
 // DSH, ZCode, Antigravity) can drive the same workflow through stdio.
-// Business logic lives in actions.js (shared with the web dashboard).
+// Business logic lives in actions.js. The visual console is an embedded MCP App
+// (src/mcp-app.js), not a browser window or desktop widget.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { Store } from './store.js';
@@ -218,28 +219,6 @@ export function buildServer() {
   server.tool('context_prepare', 'Get a compact context summary plus exact compact/new-chat actions per host.', {
     host: z.enum(['workbuddy', 'antigravity', 'zcode']).optional(),
   }, async (args) => call(a.contextPrepare, args));
-
-  // ---- web dashboard ----
-  server.tool('dashboard_open', 'Start (or get the URL of) the web dashboard.', {
-    port: z.number().optional(),
-  }, async ({ port }) => {
-    const mod = await import('./web.js');
-    const info = mod.ensureDashboard(port || 7788);
-    return call(() => info);
-  });
-  server.tool('dashboard_float', 'Open a draggable always-on-top mini dashboard over the agent UI.', {
-    port: z.number().optional(),
-  }, async ({ port }) => {
-    const mod = await import('./floating.js');
-    return call(() => mod.openFloatingDashboard({ port: port || 7788 }));
-  });
-  server.tool('dashboard_native', 'Open the native Windows desktop widget (no browser, always-on-top, draggable).', {}, async () => {
-    const mod = await import('./native-ui.js');
-    const hub = await import('./workspace-hub.js');
-    return call(() => mod.openNativeDashboard({
-      workspace: process.env.AGENTCORP_WORKSPACE || hub.pickHubRoot(),
-    }));
-  });
 
   // ---- updates / plugins ----
   server.tool('update_check', 'Check GitHub for a newer AgentCorp version.', {}, async () => {

@@ -130,27 +130,27 @@ node src/cli.js align <共享目录>     # 一键把已装的 Agent 统一到同
 
 **Git 保存/上传**：`repo_info` `repo_save` `repo_history` `repo_remote_set` `repo_sync`
 
-**通用**：`workspace_scan` `agent_message` `dashboard_open` `dashboard_data` `file_content` `git_diff`
-**看板**：`dashboard_open`　**更新**：`update_check` `update_apply` `plugin_status` `plugin_update`（共 27 个工具）
+**通用**：`workspace_scan` `agent_message` `dashboard_data` `file_content` `git_diff`
+**内嵌控制台**：`org_console`（MCP App）　**更新**：`update_check` `update_apply` `plugin_status` `plugin_update`（共 25 个工具）
 
-## 可视化看板（网页）
+## 可视化控制台（内嵌在 Agent 界面）
 
-```bash
-node src/cli.js web          # 默认 7788 端口
-# 或让任意 Agent 调用 MCP 工具 dashboard_open
-```
-打开 `http://localhost:7788`。四个页签：
+可视化控制台是一个 **MCP App**（`org_console`），直接渲染在 Agent 软件的对话/侧栏里——**不是网页、不是浏览器浮窗、不是桌面置顶小窗**，无需开端口、无需另开窗口、安装后也不弹出外挂窗口。让任意 Agent 调用 MCP 工具 `org_console` 即可在当前界面打开。
+
+支持内嵌 UI 的宿主里会渲染成交互面板；不支持 UI 插槽的宿主（如 DSH）可调用 `dashboard_data` 拿到同一份数据。
+
+面板内容：
 
 - **任务看板**：统计卡片 + "各 AI 正在做什么"（谁在做、排队多少）+ 七列流水线（点卡片看详情）
-- **实时活动流**：时间线滚动显示每个 Agent 的动作，SSE 推送，事件产生后约 0.5 秒自动刷新
+- **实时活动流**：时间线滚动显示每个 Agent 的动作，自动刷新
 - **产物与变更**：产物登记簿（作者/审核结论）+ git diff + 按路径读文件内容（都在共享工作区，只读）
-- **CEO 决策中心**：待拍板/冲突升级项（指定继续 / 打回 / 放弃）、待审任务（通过 / 打回）、给 Agent 发指令、手动派活
+- **CEO 决策中心**：待拍板/冲突升级项（指定继续 / 打回 / 放弃）、待审任务（通过 / 打回）、给 Agent 发指令、手动派活、手动指定工作 AI 和审核 AI、唤醒 AI、查余额、一键压缩上下文
 
-看板与 MCP 工具共用同一套 `actions.js` 逻辑，所以你在网页上做的操作和 Agent 通过工具做的是同一件事。
+面板与 MCP 工具共用同一套 `actions.js` 逻辑，所以你在面板上的操作和 Agent 通过工具做的是同一件事。
 
 ## 自动更新与插件热更新
 
-- **启动时检查**：AgentCorp 启动 3 秒后静默检查 GitHub Release；发现新版写入 `update_available` 事件（看板能看到）
+- **启动时检查**：AgentCorp 启动 3 秒后静默检查 GitHub Release；发现新版写入 `update_available` 事件（内嵌控制台能看到）
 - **定时后台检查**：每 30 分钟一次，同样只发事件、不打断工作
 - **核心更新**：`update apply`（git pull --ff-only）或 MCP `update_apply`
 - **插件热更新**：MCP `plugin_update`（可选 workbuddy/dsh/zcode/antigravity/all）或 `agentcorp update plugin <id>`——只重写该平台的 MCP 配置条目，保留其他 server 配置，无需重启服务
@@ -164,7 +164,7 @@ node src/cli.js web          # 默认 7788 端口
 npm test
 ```
 
-10 项测试全部通过：状态持久化、文件锁互斥、打回重做状态机、动态路由与冲突检测、轻量摘要、看板聚合、CEO 决策、文件路径安全、插件热更新（保留其他配置）、版本读取。另经真实 HTTP + MCP 客户端验证：看板 4 页签 API、SSE 实时推送、CEO 派活/发消息、27 个 MCP 工具、插件热更新与看板启动。
+测试全部通过：状态持久化、文件锁互斥、打回重做状态机、动态路由与冲突检测、轻量摘要、看板聚合、CEO 决策、文件路径安全、插件热更新（保留其他配置）、版本读取等。另经真实 MCP 客户端验证：CEO 派活/发消息、全部 MCP 工具、插件热更新与内嵌控制台面板。
 
 ##  roadmap（后续）
 

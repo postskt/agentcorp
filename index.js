@@ -4,7 +4,8 @@
 // tools directly into the harness tool system via `apply(ctx)`, so the plugin
 // is visible in the Plugins page, has a version, and updates via the plugin
 // manager. The business logic is the SAME `actions.js` core used by the MCP
-// server and web dashboard — one source of truth, no separate implementation.
+// server — one source of truth, no separate implementation. The visual console
+// is an embedded MCP App (src/mcp-app.js), not a browser window or desktop widget.
 //
 // Install (no AI / no tokens involved — the host downloads and registers it):
 //   dsh plugin --profile web add github:postskt/agentcorp
@@ -14,7 +15,7 @@ import { Store } from './src/store.js';
 import { createActions } from './src/actions.js';
 import { AGENTS, VERSION } from './src/constants.js';
 import { pickHubRoot } from './src/workspace-hub.js';
-import { maybeAutoOpenDashboard } from './src/autoopen.js';
+import { APP_URI, APP_TOOL } from './src/mcp-app.js';
 
 export const name = 'agentcorp';
 
@@ -102,19 +103,8 @@ const DEFS = [
   { n: 'file_unlock', d: 'Release a file lock you hold.', p: { path: str(), agent: en(AGENT_ENUM) }, r: ['path', 'agent'], f: (x, a) => a.fileUnlock(x) },
   { n: 'agent_message', d: 'Send a direct instruction to another agent.', p: { from: en([...AGENT_ENUM, 'ceo']), to: en(AGENT_ENUM), message: str(), taskId: str() }, r: ['from', 'to', 'message'], f: (x, a) => a.agentMessage(x) },
 
-  // ---- dashboard ----
-  { n: 'dashboard_open', d: 'Start (or get the URL of) the web dashboard.', p: { port: num() }, r: [], f: async (x) => {
-    const mod = await import('./src/web.js');
-    return mod.ensureDashboard(x.port || 7788);
-  } },
-  { n: 'dashboard_float', d: 'Open a draggable always-on-top mini dashboard over the agent UI.', p: { port: num() }, r: [], f: async (x) => {
-    const mod = await import('./src/floating.js');
-    return mod.openFloatingDashboard({ port: x.port || 7788 });
-  } },
-  { n: 'dashboard_native', d: 'Open the native Windows desktop widget (no browser, always-on-top, draggable).', p: {}, r: [], f: async () => {
-    const mod = await import('./src/native-ui.js');
-    return mod.openNativeDashboard({ workspace: WS });
-  } },
+  // ---- embedded console (renders inside UI-capable hosts; data-only in DSH) ----
+  { n: APP_TOOL, d: 'Open the embedded AgentCorp console inside the host UI (no browser window, no desktop widget). Returns the console data payload.', p: {}, r: [], f: (_a, a) => a.dashboard() },
 ];
 
 export function apply(ctx) {
@@ -151,13 +141,9 @@ export function apply(ctx) {
     ctx.effect(() => systemPrompt.section({
       name: 'agentcorp:bus',
       order: 3102,
-      text: 'AgentCorp collaboration bus is installed. Call agent_hello(agent, role) on startup to appear online. Use agent_roster to see which AIs are online. Use org_goal/task_plan/task_assign to run the CEO->PM->coder->reviewer pipeline. Call dashboard_native for the native always-on-top desktop widget (no browser), or dashboard_float for the browser fallback. Shared files live in the agent-link hub; use hub_files/hub_file_read to inspect other agents\' work, and worklog_add/repo_save to persist work. Version ' + VERSION + '.',
+      text: 'AgentCorp collaboration bus is installed. Call agent_hello(agent, role) on startup to appear online. Use agent_roster to see which AIs are online. Use org_goal/task_plan/task_assign to run the CEO->PM->coder->reviewer pipeline. The visual console is embedded in the host UI via the org_console MCP App (no browser window, no desktop widget); in hosts without MCP App UI, call dashboard_data for the same payload. Shared files live in the agent-link hub; use hub_files/hub_file_read to inspect other agents\' work, and worklog_add/repo_save to persist work. Version ' + VERSION + '.',
     }), 'agentcorp prompt section');
   }
-
-  // First install / first run: pop the draggable floating console automatically.
-  // The one-time marker lives in the shared hub, so all agents open it only once.
-  void maybeAutoOpenDashboard({ workspace: WS, trigger: 'dsh-plugin' });
 
   return () => { /* disposer: tools registrations are disposed via ctx.effect */ };
 }

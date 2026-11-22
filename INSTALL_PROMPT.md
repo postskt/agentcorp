@@ -83,4 +83,4 @@
 
 - 想让某个 AI 自安装：把上面的分享链接发给它，说"按这个链接里的指令安装 AgentCorp"。
 - 想手动装：见 [README 快速开始](README.md) 和各平台 [适配说明](adapters/)。
-- 装完看谁在线：让任意 AI 调用 `agent_roster`，或打开网页看板 `node src/cli.js web`。
+- 装完看谁在线：让任意 AI 调用 `agent_roster`；要打开可视化控制台就让 AI 调用 MCP 工具 `org_console`（内嵌在界面里，不是网页/浮窗）。
