@@ -1,0 +1,21 @@
+name: Verify package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List npm packages in user namespace
+        run: |
+          echo "=== user npm packages ==="
+          gh api "/user/packages?package_type=npm" || true
+          echo "=== package versions ==="
+          gh api "/user/packages/npm/agentcorp/versions" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
