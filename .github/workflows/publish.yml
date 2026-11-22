@@ -45,12 +45,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Packages are private by default; make this one public so anyone can see it.
+      # For a repo-linked package the correct endpoint is /repos/{owner}/{repo}/...
       - name: Make package public
-        continue-on-error: true
         run: |
           gh api --method PATCH \
             -H "Accept: application/vnd.github+json" \
-            /user/packages/npm/agentcorp \
+            /repos/postskt/agentcorp/packages/npm/agentcorp \
             -f visibility=public
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
