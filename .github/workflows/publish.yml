@@ -39,18 +39,10 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
           "
 
+      # publishConfig.access=public in package.json makes the package public
+      # automatically; no separate visibility API call is needed (and the
+      # Packages REST API is not reachable with GITHUB_TOKEN for that).
       - name: Publish
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Packages are private by default; make this one public so anyone can see it.
-      # For a repo-linked package the correct endpoint is /repos/{owner}/{repo}/...
-      - name: Make package public
-        run: |
-          gh api --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/postskt/agentcorp/packages/npm/agentcorp \
-            -f visibility=public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
