@@ -1,0 +1,34 @@
+name: Diagnose package visibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List user packages
+        run: |
+          echo "=== /user/packages ==="
+          gh api /user/packages || true
+          echo "=== /repos/postskt/agentcorp/packages ==="
+          gh api /repos/postskt/agentcorp/packages || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Try visibility paths
+        run: |
+          for path in \
+            "/user/packages/npm/agentcorp" \
+            "/user/packages/npm/%40postskt%2Fagentcorp" \
+            "/repos/postskt/agentcorp/packages/npm/agentcorp" \
+            "/repos/postskt/agentcorp/packages/npm/%40postskt%2Fagentcorp"; do
+            echo "=== PATCH $path ==="
+            gh api --method PATCH -H "Accept: application/vnd.github+json" "$path" -f visibility=public || true
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
