@@ -18,6 +18,7 @@
     "prompts/",
     "public/",
     "README.md",
+    "NPM_PUBLISH.md",
     "LICENSE"
   ],
   "bin": {
@@ -60,5 +61,5 @@
     "type": "git",
     "url": "git+https://github.com/postskt/agentcorp.git"
   },
-  "homepage": "https://postskt.github.io/agentcorp/"
+  "homepage": "https://github.com/postskt/agentcorp"
 }

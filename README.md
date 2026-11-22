@@ -57,24 +57,25 @@ bash install.sh zcode          # 或 workbuddy / antigravity / all
 ```
 该脚本把对应平台的原生技能/插件清单复制到位，无需 AI 参与。
 
-### npm 安装链接（一条命令，不用 git clone）
+### npm 安装链接（标准包名，一条命令）
 
-**方式 A — 从 GitHub 直装（现在就能用）**：
-```bash
-npm install -g github:postskt/agentcorp     # 或 npx -y github:postskt/agentcorp mcp
-```
-已实测可解析到 `agentcorp@0.2.0`。适合所有平台的 MCP 配置（`command: npx`, `args: ["-y","github:postskt/agentcorp","mcp"]`），无需先 clone。
-
-**方式 B — 从 npmjs.org 安装（发布后可用）**：
 ```bash
 npm install -g postskt-agentcorp            # 或 npx -y postskt-agentcorp mcp
 ```
-> npm 上的 `agentcorp` 名字已被无关包占用，所以 npmjs 包名为 `postskt-agentcorp`。仓库和 DSH 插件仍用 `agentcorp`（DSH 靠它匹配 `cordis.patch.yml`）。发布：`npm login` 后 `node npm-publish.mjs`（`--dry-run` 可预演）。详情见 [NPM_PUBLISH.md](NPM_PUBLISH.md)。
 
-### 备用：发给 AI 自装（会消耗少量 token）
-**`https://postskt.github.io/agentcorp/install.html`** — 只有在上面命令不可用时才用这种方式。
+这是发布在 npmjs.org 上的标准包名，任何支持 npm 的环境都能安装。作为 MCP server 的配置：
 
-> 注意：早期手动改 `mcp.json` 的方式仍然有效，但它**不是标准插件**——DSH 插件界面看不到，也谈不上版本更新。要"插件界面可见 + 一键更新"，请用上面的原生插件方式。
+```json
+{ "mcpServers": { "agentcorp": {
+  "command": "npx",
+  "args": ["-y", "postskt-agentcorp", "mcp"],
+  "env": { "AGENTCORP_WORKSPACE": "E:/agent-link" }
+} } }
+```
+
+> npm 上的 `agentcorp` 名字已被无关包占用，所以 npmjs 包名为 `postskt-agentcorp`。仓库和 DSH 插件仍用 `agentcorp`（DSH 靠它匹配 `cordis.patch.yml`）。发布/维护见 [NPM_PUBLISH.md](NPM_PUBLISH.md)。
+
+> 注意：不要再用 `npm install github:postskt/agentcorp` —— `github:` 简写在很多环境（旧版 npm、部分工具、受限网络）会报"格式错误"或拉不下来，请以标准包名为准。早期手动改 `mcp.json` 的方式仍有效，但不是标准插件——DSH 插件界面看不到，也谈不上版本更新。
 
 ## 双形态说明
 - `index.js` — DSH 原生插件入口（`apply(ctx)` 注册 38 个工具，底层复用 actions 核心）
@@ -82,7 +83,7 @@ npm install -g postskt-agentcorp            # 或 npx -y postskt-agentcorp mcp
 - `cordis.patch.yml` + `locale/` — DSH bundle 注册与界面文案
 - `integrations/` — 其余三家的原生技能/插件清单
 
-访问 `https://postskt.github.io/agentcorp/` 看图文说明。完整文本见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
+完整安装文本见 [INSTALL_PROMPT.md](INSTALL_PROMPT.md)。想手动装就用下面的快速开始。
 
 ## 快速开始
 

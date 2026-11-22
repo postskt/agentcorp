@@ -1,46 +1,35 @@
 # AgentCorp npm 安装与发布
 
-## 用户怎么装
-
-### 方式 A — GitHub 直装（无需发布，立即可用）
+## 用户怎么装（唯一推荐方式）
 
 ```bash
-npm install -g github:postskt/agentcorp
+npm install -g postskt-agentcorp
 # 或按需调用，不全局安装：
-npx -y github:postskt/agentcorp mcp
+npx -y postskt-agentcorp mcp
 ```
 
-作为 MCP server 写进各家配置（`command` / `args`）：
+这是发布在 npmjs.org 上的**标准包名**，任何支持 npm 的环境都能安装。作为 MCP server 写进各家配置：
 
 ```json
 {
   "mcpServers": {
     "agentcorp": {
       "command": "npx",
-      "args": ["-y", "github:postskt/agentcorp", "mcp"],
+      "args": ["-y", "postskt-agentcorp", "mcp"],
       "env": { "AGENTCORP_WORKSPACE": "E:/agent-link" }
     }
   }
 }
 ```
 
-本机已实测：`npm pack https://github.com/postskt/agentcorp/archive/refs/heads/main.tar.gz` 与 `npm view github:postskt/agentcorp`（返回 `agentcorp@0.2.0`）均成功。
-
-### 方式 B — npmjs.org 包（需先发布一次）
-
-```bash
-npm install -g postskt-agentcorp
-# 或：npx -y postskt-agentcorp mcp
-```
-
-MCP 配置同上，只把 `args` 换成 `["-y","postskt-agentcorp","mcp"]`。
+> ⚠️ **不要用 `npm install -g github:postskt/agentcorp`**。`github:` 简写在很多环境（旧版 npm、部分工具、受限网络/代理）会报"格式错误"或拉不下来。请始终用标准包名 `postskt-agentcorp`。
 
 ## 维护者怎么发布到 npmjs.org
 
 ### 为什么不是直接 `npm publish`
 
 - npm 上无 scope 的 `agentcorp` 已被一个无关包占用（描述是 "hello world"），无法使用。
-- 仓库的 `package.json` 名字**必须保持 `agentcorp`**：DSH 的 `cordis.patch.yml` 靠插件行名匹配包名，`dsh plugin add github:postskt/agentcorp` 依赖这一点。直接改名会破坏 DSH 原生插件安装。
+- 仓库的 `package.json` 名字**必须保持 `agentcorp`**：DSH 的 `cordis.patch.yml` 靠插件行名匹配包名，`dsh plugin add github:postskt/agentcorp` 依赖这一点（这是 DSH 自己的插件语法，与 npm 无关，是有效的）。直接改名会破坏 DSH 原生插件安装。
 - 所以发布脚本 `npm-publish.mjs` 采用「临时改名 → 发布 → 恢复」：发布时用 `postskt-agentcorp`，结束后自动把 `package.json` 恢复成 `agentcorp`。
 
 ### 发布步骤
@@ -75,7 +64,7 @@ npx -y postskt-agentcorp mcp        # 确认 stdio MCP server 能启动
 
 ## `mcp` 子命令
 
-两种方式最终都靠 CLI 的 `mcp` 子命令启动 stdio MCP server：
+包最终靠 CLI 的 `mcp` 子命令启动 stdio MCP server：
 
 ```bash
 agentcorp mcp     # = node src/index.js，供 npx 作为 MCP server 调用
