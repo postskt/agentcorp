@@ -57,25 +57,26 @@ bash install.sh zcode          # 或 workbuddy / antigravity / all
 ```
 该脚本把对应平台的原生技能/插件清单复制到位，无需 AI 参与。
 
-### npm 安装链接（标准包名，一条命令）
+### npm 安装（GitHub Packages）
 
+包发布在 GitHub Packages，包名 `@postskt/agentcorp`。由于 GitHub Packages 要求认证，装之前需配置一次 token：
+
+```ini
+# 项目目录建 .npmrc（token 需 read:packages 权限）
+@postskt:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=你的GitHub_TOKEN
+```
+
+然后：
 ```bash
-npm install -g postskt-agentcorp            # 或 npx -y postskt-agentcorp mcp
+npm install -g @postskt/agentcorp      # 或 npx -y @postskt/agentcorp mcp
 ```
 
-这是发布在 npmjs.org 上的标准包名，任何支持 npm 的环境都能安装。作为 MCP server 的配置：
+MCP 配置：`command: npx`，`args: ["-y","@postskt/agentcorp","mcp"]`，`env.AGENTCORP_WORKSPACE` 填共享目录。
 
-```json
-{ "mcpServers": { "agentcorp": {
-  "command": "npx",
-  "args": ["-y", "postskt-agentcorp", "mcp"],
-  "env": { "AGENTCORP_WORKSPACE": "E:/agent-link" }
-} } }
-```
+> 为什么不用 npmjs.org：`agentcorp` 名字已被无关包占用，且 npmjs.org 访问受限。为什么不用 `github:` 简写：很多环境会报"格式错误"。完整说明见 [NPM_PUBLISH.md](NPM_PUBLISH.md)。发布由 GitHub Actions 自动完成（推送 `v*` 标签触发）。
 
-> npm 上的 `agentcorp` 名字已被无关包占用，所以 npmjs 包名为 `postskt-agentcorp`。仓库和 DSH 插件仍用 `agentcorp`（DSH 靠它匹配 `cordis.patch.yml`）。发布/维护见 [NPM_PUBLISH.md](NPM_PUBLISH.md)。
-
-> 注意：不要再用 `npm install github:postskt/agentcorp` —— `github:` 简写在很多环境（旧版 npm、部分工具、受限网络）会报"格式错误"或拉不下来，请以标准包名为准。早期手动改 `mcp.json` 的方式仍有效，但不是标准插件——DSH 插件界面看不到，也谈不上版本更新。
+> 注意：早期手动改 `mcp.json` 的方式仍有效，但不是标准插件——DSH 插件界面看不到，也谈不上版本更新。
 
 ## 双形态说明
 - `index.js` — DSH 原生插件入口（`apply(ctx)` 注册 38 个工具，底层复用 actions 核心）

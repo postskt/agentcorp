@@ -1,0 +1,56 @@
+name: Publish to GitHub Packages
+
+# Publishes the npm package to GitHub Packages on every version tag (v*),
+# and can also be triggered manually from the Actions tab.
+# Uses the built-in GITHUB_TOKEN which already has `packages: write` —
+# no personal token and no npmjs.org access needed.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@postskt'
+
+      # GitHub Packages requires a scoped name. Repo keeps "agentcorp"
+      # for DSH compatibility; rename only inside the CI workspace.
+      - name: Set scoped package name
+        run: |
+          node -e "
+            const fs=require('fs');
+            const p=require('./package.json');
+            p.name='@postskt/agentcorp';
+            p.publishConfig={...(p.publishConfig||{}), registry:'https://npm.pkg.github.com', access:'public'};
+            fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+          "
+
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Packages are private by default; make this one public so anyone can see it.
+      - name: Make package public
+        continue-on-error: true
+        run: |
+          gh api --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            /user/packages/npm/agentcorp \
+            -f visibility=public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,71 +1,59 @@
-# AgentCorp npm 安装与发布
+# AgentCorp 包安装（GitHub Packages）
 
-## 用户怎么装（唯一推荐方式）
+AgentCorp 发布在 **GitHub Packages**（npm registry：`https://npm.pkg.github.com`），包名为 `@postskt/agentcorp`。
 
-```bash
-npm install -g postskt-agentcorp
-# 或按需调用，不全局安装：
-npx -y postskt-agentcorp mcp
+> ⚠️ 由于 npmjs.org 访问受限，且 `agentcorp` 名字在 npmjs 已被无关包占用，改用 GitHub Packages。
+> **重要限制**：GitHub Packages 的 npm 包即使设为 public，安装时也需要一个 GitHub token 认证（不像 npmjs 那样免登录）。下面会说明如何配置。
+
+## 别人怎么装
+
+### 1. 生成 GitHub token（一次性）
+
+在 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) 生成一个 token，勾选 **`read:packages`** 权限。
+
+### 2. 配置 `.npmrc`（在你要安装 AgentCorp 的项目目录）
+
+```ini
+@postskt:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=你的GitHub_TOKEN
 ```
 
-这是发布在 npmjs.org 上的**标准包名**，任何支持 npm 的环境都能安装。作为 MCP server 写进各家配置：
+或在终端登录（用户名填 GitHub 用户名，密码填上面的 token）：
+
+```bash
+npm login --scope=@postskt --auth-type=legacy --registry=https://npm.pkg.github.com
+```
+
+### 3. 安装
+
+```bash
+npm install -g @postskt/agentcorp
+# 或按需：npx -y @postskt/agentcorp mcp
+```
+
+作为 MCP server 的配置：
 
 ```json
-{
-  "mcpServers": {
-    "agentcorp": {
-      "command": "npx",
-      "args": ["-y", "postskt-agentcorp", "mcp"],
-      "env": { "AGENTCORP_WORKSPACE": "E:/agent-link" }
-    }
-  }
-}
+{ "mcpServers": { "agentcorp": {
+  "command": "npx",
+  "args": ["-y", "@postskt/agentcorp", "mcp"],
+  "env": { "AGENTCORP_WORKSPACE": "E:/agent-link" }
+} } }
 ```
 
-> ⚠️ **不要用 `npm install -g github:postskt/agentcorp`**。`github:` 简写在很多环境（旧版 npm、部分工具、受限网络/代理）会报"格式错误"或拉不下来。请始终用标准包名 `postskt-agentcorp`。
+## 维护者怎么发布
 
-## 维护者怎么发布到 npmjs.org
+发布由 GitHub Actions 自动完成，**不需要本地 token、不需要访问 npmjs.org**：
 
-### 为什么不是直接 `npm publish`
+- 工作流：`.github/workflows/publish.yml`
+- 触发：推送 `v*` 标签（如 `git tag v0.2.1 && git push origin v0.2.1`），或在 Actions 页手动点 "Run workflow"
+- 权限：工作流用内置 `GITHUB_TOKEN`（带 `packages: write`），发布后自动把包设为 public
+- 发布时 CI 里临时把包名改为 `@postskt/agentcorp`（仓库里始终保持 `agentcorp`，以兼容 DSH 的 `cordis.patch.yml`）
 
-- npm 上无 scope 的 `agentcorp` 已被一个无关包占用（描述是 "hello world"），无法使用。
-- 仓库的 `package.json` 名字**必须保持 `agentcorp`**：DSH 的 `cordis.patch.yml` 靠插件行名匹配包名，`dsh plugin add github:postskt/agentcorp` 依赖这一点（这是 DSH 自己的插件语法，与 npm 无关，是有效的）。直接改名会破坏 DSH 原生插件安装。
-- 所以发布脚本 `npm-publish.mjs` 采用「临时改名 → 发布 → 恢复」：发布时用 `postskt-agentcorp`，结束后自动把 `package.json` 恢复成 `agentcorp`。
+本地也保留了手动发布脚本 `npm-publish-github.mjs`，但它需要带 `write:packages` 权限的 classic PAT（通过 `GITHUB_TOKEN` 环境变量传入），一般不用，交给 Actions 即可。
 
-### 发布步骤
+## 为什么包名是 `@postskt/agentcorp`
 
-```bash
-npm login                       # 首次需要，浏览器/终端登录 npmjs 账号
-node npm-publish.mjs --dry-run  # 预演，确认打包文件与名字
-node npm-publish.mjs            # 正式发布 postskt-agentcorp@<version>
-```
-
-脚本行为：
-1. 检查 `npm whoami`，未登录直接报错退出（不会改文件）。
-2. 临时把 `package.json` 的 `name` 改为 `postskt-agentcorp`，加 `publishConfig.access=public`。
-3. 执行 `npm publish --access public`。
-4. 在 `finally` 中恢复原始 `package.json`，无论成功失败都不会留下改名。
-
-自定义包名：
-
-```bash
-NPM_PKG_NAME=@yourname/agentcorp node npm-publish.mjs   # 用你自己的 scope
-```
-
-> 注意：包名和版本一旦发布到 npm 就永久占用、同名同版本不能重发。每次发布前记得在 `package.json` 里递增 `version`。脚本恢复的是原始版本，所以版本号由你手动维护。
-
-### 发布后验证
-
-```bash
-npm view postskt-agentcorp version
-npm pack postskt-agentcorp          # 确认能从 registry 拉到
-npx -y postskt-agentcorp mcp        # 确认 stdio MCP server 能启动
-```
-
-## `mcp` 子命令
-
-包最终靠 CLI 的 `mcp` 子命令启动 stdio MCP server：
-
-```bash
-agentcorp mcp     # = node src/index.js，供 npx 作为 MCP server 调用
-```
+- GitHub Packages 强制要求 scoped 包名（`@owner/name`）。
+- 仓库和 DSH 插件仍叫 `agentcorp`（DSH 靠它匹配 `cordis.patch.yml`，`dsh plugin add github:postskt/agentcorp` 是 DSH 自己的语法，有效且与 npm 无关）。
+- 不要用 `npm install github:postskt/agentcorp` —— `github:` 简写在很多环境会报"格式错误"。

@@ -24,16 +24,18 @@
   不确定就运行 node src/cli.js doctor 查看各家指向哪里。
 
 【第 1 步：获取 AgentCorp】
-- 优先用 npm 标准包名安装（无需 git clone）：
-  npm install -g postskt-agentcorp
-  安装后用 `npm root -g` 找到全局 node_modules 里的 postskt-agentcorp 目录（下称 AGENTCORP_DIR）。
+- 优先用 GitHub Packages 的 npm 包安装（无需 git clone）。先在项目目录建 `.npmrc`：
+  @postskt:registry=https://npm.pkg.github.com
+  //npm.pkg.github.com/:_authToken=<你的GitHub_TOKEN，需 read:packages 权限>
+  然后：npm install -g @postskt/agentcorp
+  安装后用 `npm root -g` 找到全局 node_modules 里的 agentcorp 目录（下称 AGENTCORP_DIR）。
   注意：不要用 `npm install github:postskt/agentcorp`，`github:` 简写在很多环境会报"格式错误"。
 - 备用：从 https://github.com/postskt/agentcorp 获取代码到本地，例如：
   git clone https://github.com/postskt/agentcorp.git
 - 进入 agentcorp 目录，运行 npm install 安装依赖。
 - 如果你的环境无法 git clone，告诉我，我会改用 GitHub API 获取文件。
 - 【路径约定】下文所有 `node src/cli.js ...`，若你是 npm 全局安装的，都要换成
-  `node <AGENTCORP_DIR>/src/cli.js ...`（或直接用 `npx -y postskt-agentcorp ...` 代替整条命令）。
+  `node <AGENTCORP_DIR>/src/cli.js ...`（或直接用 `npx -y @postskt/agentcorp ...` 代替整条命令）。
   第 0 步的 `hub path` / `doctor` 同理——如果你还没取得代码，可先做完第 1 步再回头确认共享目录。
 
 【第 2 步：初始化共享工作区】
