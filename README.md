@@ -57,6 +57,20 @@ bash install.sh zcode          # 或 workbuddy / antigravity / all
 ```
 该脚本把对应平台的原生技能/插件清单复制到位，无需 AI 参与。
 
+### npm 安装链接（一条命令，不用 git clone）
+
+**方式 A — 从 GitHub 直装（现在就能用）**：
+```bash
+npm install -g github:postskt/agentcorp     # 或 npx -y github:postskt/agentcorp mcp
+```
+已实测可解析到 `agentcorp@0.2.0`。适合所有平台的 MCP 配置（`command: npx`, `args: ["-y","github:postskt/agentcorp","mcp"]`），无需先 clone。
+
+**方式 B — 从 npmjs.org 安装（发布后可用）**：
+```bash
+npm install -g postskt-agentcorp            # 或 npx -y postskt-agentcorp mcp
+```
+> npm 上的 `agentcorp` 名字已被无关包占用，所以 npmjs 包名为 `postskt-agentcorp`。仓库和 DSH 插件仍用 `agentcorp`（DSH 靠它匹配 `cordis.patch.yml`）。发布：`npm login` 后 `node npm-publish.mjs`（`--dry-run` 可预演）。详情见 [NPM_PUBLISH.md](NPM_PUBLISH.md)。
+
 ### 备用：发给 AI 自装（会消耗少量 token）
 **`https://postskt.github.io/agentcorp/install.html`** — 只有在上面命令不可用时才用这种方式。
 

@@ -28,13 +28,22 @@
   <pre>插件 → 添加插件 → github:postskt/agentcorp → 安装</pre>
   <p style="font-size:13px;color:#9fb0c8">更新用插件卡片上的「更新」按钮。命令行 <code>dsh plugin --profile web add github:postskt/agentcorp</code> 仅当本机 PATH 里有 <code>dsh</code> 时可用（桌面版自带但通常不在 PATH；<code>npx @deepseek-ai/dsh</code> 不可用）。</p>
 
-  <h2>2. ZCode / WorkBuddy / Antigravity（技能/插件清单 + MCP）</h2>
+  <h2>2. npm 安装链接（一条命令，不用 git clone）</h2>
+  <p style="font-size:13px;color:#9fb0c8"><b>方式 A — 从 GitHub 直装，现在就能用（已实测）</b>：</p>
+  <pre>npm install -g github:postskt/agentcorp
+# 或放进 MCP 配置：command=npx, args=[-y, github:postskt/agentcorp, mcp]</pre>
+  <p style="font-size:13px;color:#9fb0c8"><b>方式 B — 从 npmjs.org 安装（发布后可用）</b>：</p>
+  <pre>npm install -g postskt-agentcorp
+# 或：npx -y postskt-agentcorp mcp</pre>
+  <p style="font-size:13px;color:#9fb0c8">npm 上的 <code>agentcorp</code> 名字已被无关包占用，故 npmjs 包名用 <code>postskt-agentcorp</code>；仓库与 DSH 插件仍叫 <code>agentcorp</code>。发布方法与脚本见仓库 <code>NPM_PUBLISH.md</code>。</p>
+
+  <h2>3. ZCode / WorkBuddy / Antigravity（技能/插件清单 + MCP）</h2>
   <pre>git clone --depth 1 https://github.com/postskt/agentcorp.git
 cd agentcorp
 bash install.sh zcode        # 或 workbuddy / antigravity / all</pre>
   <p style="font-size:13px;color:#9fb0c8">脚本把对应平台的原生技能/插件清单复制到位并配置 MCP，无需 AI 参与。</p>
 
-  <h2>3. 装完自检（在任意 Agent 里）</h2>
+  <h2>4. 装完自检（在任意 Agent 里）</h2>
   <pre>agent_hello(agent="你的身份", role="coder")   # 上线报到
 agent_roster()                                  # 看谁在线
 agent_doctor()                                  # 诊断工作区是否一致</pre>

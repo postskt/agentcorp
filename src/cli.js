@@ -41,6 +41,11 @@ function configFor(platform) {
 }
 
 switch (cmd) {
+  case 'mcp': {
+    // stdio MCP server entry, for use by `npx -y <pkg> mcp` in agent configs.
+    await import('./index.js');
+    break;
+  }
   case 'init': {
     const hub = await import('./workspace-hub.js');
     const hubRoot = process.env.AGENTCORP_HUB_ROOT || hub.pickHubRoot();
@@ -202,6 +207,7 @@ Usage:
   agentcorp init                 Init shared hub (next drive after C:) + .agentcorp
   agentcorp hub [path|init|files] Show/create shared hub (agent-link)
   agentcorp repo status|commit|log|remote|sync   Save/upload the shared hub to git
+  agentcorp mcp                  Run as stdio MCP server (for npx MCP configs)
   agentcorp status               Show company status
   agentcorp doctor               Diagnose why agents can't see each other
   agentcorp align [workspace]    Unify all installed agents onto one workspace
