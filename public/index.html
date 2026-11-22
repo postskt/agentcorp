@@ -11,7 +11,9 @@
   <div class="brand"><span class="logo">AC</span><span>AgentCorp</span><span class="ver" id="ver">v0.1.0</span></div>
   <div class="goal" id="goalBar"><span class="muted">目标未设置 — CEO 在下方下达方向</span></div>
   <div class="top-actions">
-    <span class="live" id="liveDot">● 实时</span>
+    <button class="live" id="liveDot" title="点击暂停/恢复实时刷新">● 实时</button>
+    <button id="btnFloat" class="btn" title="当前页面内收起为可拖动卡片">页内浮窗</button>
+    <button id="btnMini" class="btn" title="打开原生桌面悬浮窗（无需浏览器）">原生悬浮窗</button>
     <button id="btnGoal" class="btn primary">下达目标</button>
   </div>
 </header>
@@ -20,6 +22,7 @@
   <button class="tab active" data-tab="board">任务看板</button>
   <button class="tab" data-tab="feed">实时活动流</button>
   <button class="tab" data-tab="artifacts">产物与变更</button>
+  <button class="tab" data-tab="hub">共享中心</button>
   <button class="tab" data-tab="decision">CEO 决策中心 <span class="badge" id="decisionBadge">0</span></button>
 </nav>
 
@@ -60,6 +63,57 @@
     </div>
   </section>
 
+  <!-- 共享中心 -->
+  <section class="pane" id="pane-hub">
+    <div class="grid-2">
+      <div>
+        <div class="section-title">共享工作区</div>
+        <div class="panel" id="hubInfo"></div>
+        <div class="section-title" style="margin-top:18px">各 Agent 文件夹</div>
+        <div class="list" id="hubAgents"></div>
+        <div class="section-title" style="margin-top:18px">文件浏览 <span class="muted small">只读，来自共享目录</span></div>
+        <div class="inline-form">
+          <select id="hubAgent">
+            <option value="">全部目录</option>
+            <option value="workbuddy">workbuddy/</option>
+            <option value="dsh">dsh/</option>
+            <option value="zcode">zcode/</option>
+            <option value="antigravity">antigravity/</option>
+            <option value="inbox">inbox/</option>
+            <option value="shared">shared/</option>
+            <option value="worklog">worklog/</option>
+          </select>
+          <button class="btn" id="btnHubFiles">刷新文件</button>
+        </div>
+        <div class="list file-list" id="hubFiles"></div>
+      </div>
+      <div>
+        <div class="section-title">Git 保存 / 上传</div>
+        <div class="panel" id="repoInfo"></div>
+        <div class="inline-form" style="margin-top:10px">
+          <input id="commitMsg" placeholder="提交说明，例如：保存今日工作记录">
+          <button class="btn primary" id="btnRepoSave">保存提交</button>
+          <button class="btn" id="btnRepoSync">提交并上传</button>
+        </div>
+        <pre class="diff" id="repoResult"></pre>
+        <div class="section-title" style="margin-top:18px">写工作记录</div>
+        <div class="inline-form col">
+          <select id="logAgent">
+            <option value="ceo">CEO</option>
+            <option value="workbuddy">WorkBuddy</option>
+            <option value="dsh">DSH</option>
+            <option value="zcode">ZCode</option>
+            <option value="antigravity">Antigravity</option>
+          </select>
+          <textarea id="logText" rows="3" placeholder="今天完成了什么、遇到什么问题、需要谁接手"></textarea>
+          <button class="btn primary" id="btnWorklog">追加到工作日志</button>
+        </div>
+        <div class="section-title" style="margin-top:18px">插件状态</div>
+        <div class="panel" id="pluginInfo"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- CEO 决策中心 -->
   <section class="pane" id="pane-decision">
     <div class="grid-2">
@@ -86,6 +140,9 @@
     </div>
   </section>
 </main>
+
+<!-- 收起后的悬浮卡片 -->
+<div class="float-widget" id="floatWidget" hidden></div>
 
 <!-- 模态框 -->
 <div class="modal-mask" id="modal">

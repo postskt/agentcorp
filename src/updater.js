@@ -93,14 +93,37 @@ function applyUpdate() {
 const PLUGIN_CONFIG_PATH = {
   workbuddy: ({ home }) => path.join(home, '.workbuddy', 'mcp.json'),
   dsh: ({ home }) => path.join(home, '.dsh', 'mcp_config.json'),
-  zcode: ({ home }) => path.join(home, '.zcode', 'mcp_config.json'),
+  // ZCode stores user-scope MCP servers in ~/.zcode/cli/config.json under `mcp.servers`
+  // (not .zcode/mcp_config.json) — local patch, see readAgentcorpEntry/ensureServersRoot.
+  zcode: ({ home }) => path.join(home, '.zcode', 'cli', 'config.json'),
   antigravity: ({ home }) => path.join(home, '.gemini', 'config', 'mcp_config.json'),
 };
+
+// Locate the agentcorp server entry regardless of config shape:
+// ZCode uses { mcp: { servers: { ... } } }, other platforms use { mcpServers: { ... } }.
+function findAgentcorpEntry(cfg) {
+  return cfg?.mcp?.servers?.agentcorp || cfg?.mcpServers?.agentcorp || null;
+}
+
+// Return (creating if needed) the object that holds MCP server entries, in the
+// shape native to the platform the path belongs to.
+function ensureServersRoot(cfg, p) {
+  if (cfg.mcp?.servers && typeof cfg.mcp.servers === 'object') return cfg.mcp.servers;
+  if (cfg.mcpServers && typeof cfg.mcpServers === 'object') return cfg.mcpServers;
+  const zcodeShape = String(p).replace(/\\/g, '/').includes('.zcode/cli/config.json');
+  if (zcodeShape) {
+    if (typeof cfg.mcp !== 'object' || cfg.mcp === null) cfg.mcp = {};
+    cfg.mcp.servers = {};
+    return cfg.mcp.servers;
+  }
+  cfg.mcpServers = {};
+  return cfg.mcpServers;
+}
 
 function readAgentcorpEntry(p) {
   try {
     const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
-    const entry = cfg?.mcpServers?.agentcorp;
+    const entry = findAgentcorpEntry(cfg);
     if (!entry) return null;
     return {
       registered: true,
@@ -178,10 +201,11 @@ function alignWorkspaces(workspace) {
     if (!fs.existsSync(p)) { results.push({ id, ok: false, reason: 'not installed' }); continue; }
     try {
       const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
-      if (!cfg?.mcpServers?.agentcorp) { results.push({ id, ok: false, reason: 'agentcorp not registered' }); continue; }
-      cfg.mcpServers.agentcorp.env = cfg.mcpServers.agentcorp.env || {};
-      const before = cfg.mcpServers.agentcorp.env.AGENTCORP_WORKSPACE || null;
-      cfg.mcpServers.agentcorp.env.AGENTCORP_WORKSPACE = workspace;
+      const entry = findAgentcorpEntry(cfg);
+      if (!entry) { results.push({ id, ok: false, reason: 'agentcorp not registered' }); continue; }
+      entry.env = entry.env || {};
+      const before = entry.env.AGENTCORP_WORKSPACE || null;
+      entry.env.AGENTCORP_WORKSPACE = workspace;
       const tmp = `${p}.tmp`;
       fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf8');
       fs.renameSync(tmp, p);
@@ -206,8 +230,8 @@ function updatePlugin(id, workspace) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
     let cfg = {};
     try { cfg = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { cfg = {}; }
-    if (!cfg.mcpServers || typeof cfg.mcpServers !== 'object') cfg.mcpServers = {};
-    cfg.mcpServers.agentcorp = {
+    const servers = ensureServersRoot(cfg, p);
+    servers.agentcorp = {
       command: 'node',
       args: [entryPath],
       env: { AGENTCORP_WORKSPACE: workspace || process.cwd() },

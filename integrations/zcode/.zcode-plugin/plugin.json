@@ -1,0 +1,43 @@
+{
+  "name": "agentcorp",
+  "version": "0.2.0",
+  "description": "AgentCorp — connect ZCode with WorkBuddy, DSH and Antigravity into one AI collaboration bus. Shared tasks, online roster, cross-agent file hub and git-backed worklog, with an embedded console panel.",
+  "description_i18n": {
+    "en": "Connect ZCode with WorkBuddy, DSH and Antigravity into one AI company. Shared task pipeline, online roster, cross-agent file hub, git worklog — plus an embedded AgentCorp console panel.",
+    "zh-CN": "把 ZCode 与 WorkBuddy、DSH、Antigravity 连成一家 AI 公司：共享任务流水线、在线名册、跨 Agent 文件中心、Git 工作记录，并带一个内嵌控制台面板。"
+  },
+  "author": {
+    "name": "postskt"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/postskt/agentcorp",
+  "keywords": ["agentcorp", "collaboration", "multi-agent", "mcp", "zcode", "workbuddy", "deepseek", "antigravity"],
+  "skills": "skills",
+  "mcpServers": {
+    "agentcorp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/src/index.js"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "AGENTCORP_WORKSPACE": "${ZCODE_PROJECT_DIR}",
+        "AGENTCORP_HUB_ROOT": "${ZCODE_PROJECT_DIR}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "console",
+        "title": {
+          "zh-CN": "AgentCorp 控制台",
+          "en-US": "AgentCorp Console"
+        },
+        "icon": "organization",
+        "server": "agentcorp",
+        "resourceUri": "ui://agentcorp/console.html",
+        "availability": "session"
+      }
+    ]
+  }
+}

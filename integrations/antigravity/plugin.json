@@ -15,11 +15,16 @@
     "zcode"
   ],
   "suggestedPrompts": [
+    "打开 AgentCorp 控制台内嵌面板",
     "调用 agent_hello 报到并看看现在有哪些 AI 在线",
     "把当前目标同步到 AgentCorp 协作总线",
     "查看其他 AI 工作区里的文件，等我确认后再改",
     "把今天的工作记录提交到共享 git 仓库"
   ],
+  "description_i18n": {
+    "en": "Open the embedded AgentCorp console via the org_console tool. It renders in the Antigravity side panel (aux_pane) or as a full page (global) on v2.34.0+.",
+    "zh-CN": "通过 org_console 工具打开内嵌的 AgentCorp 控制台面板，在 Antigravity v2.34.0+ 中显示于侧边栏（aux_pane）或全页（global）。"
+  },
   "mcpServers": {
     "agentcorp": {
       "command": "node",

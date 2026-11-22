@@ -10,6 +10,9 @@ import { AGENTS, VERSION } from './constants.js';
 import {
   checkForUpdates, applyUpdate, pluginStatus, updatePlugin, startBackgroundChecks,
 } from './updater.js';
+import {
+  APP_URI, APP_MIME, APP_TOOL, APP_RESOURCE_META, APP_TOOL_META, buildConsoleHtml,
+} from './mcp-app.js';
 
 const WS = process.env.AGENTCORP_WORKSPACE || process.cwd();
 const store = new Store(WS);
@@ -54,6 +57,35 @@ if (AUTO_CHECK) {
 export function buildServer() {
   const server = new McpServer({ name: 'agentcorp', version: VERSION });
   const agent = z.enum(['workbuddy', 'dsh', 'zcode', 'antigravity']);
+
+  // ---- embedded MCP App (rendered INSIDE the host UI, no browser/window) ----
+  // WorkBuddy sees _meta.ui.resourceUri and loads the ui:// resource in a
+  // sandboxed webview. The tool result's structuredContent feeds the panel.
+  server.registerResource('agentcorp-console', APP_URI, {
+    title: 'AgentCorp Console',
+    description: 'Embedded collaboration console for the agent-link hub.',
+    mimeType: APP_MIME,
+    _meta: APP_RESOURCE_META,
+  }, async () => ({
+    contents: [{
+      uri: APP_URI,
+      mimeType: APP_MIME,
+      text: buildConsoleHtml(),
+      _meta: APP_RESOURCE_META,
+    }],
+  }));
+  server.registerTool(APP_TOOL, {
+    title: 'Open AgentCorp Console',
+    description: 'Open the embedded AgentCorp console inside this chat to see goals, agent online status, tasks and activity, and make CEO decisions — without leaving the conversation.',
+    inputSchema: {},
+    _meta: APP_TOOL_META,
+  }, async () => {
+    const data = a.dashboard();
+    return {
+      content: [{ type: 'text', text: 'AgentCorp 控制台已打开。' }],
+      structuredContent: data,
+    };
+  });
 
   // ---- info / goal ----
   server.tool('org_info', 'Identify yourself and inspect the collaboration bus.', {}, async () => call(a.orgInfo));
@@ -164,10 +196,28 @@ export function buildServer() {
   // ---- locks / messages ----
   server.tool('file_lock', 'Acquire a file lock before editing.', { path: z.string(), agent }, async (args) => call(a.fileLock, args));
   server.tool('file_unlock', 'Release a file lock you hold.', { path: z.string(), agent }, async (args) => call(a.fileUnlock, args));
-  server.tool('agent_message', 'Send a direct instruction to another agent.', {
+  server.tool('agent_message', 'Send a direct instruction to another agent. Set wake=true to also nudge its window.', {
     from: z.enum(['workbuddy', 'dsh', 'zcode', 'antigravity', 'ceo']),
-    to: agent, message: z.string(), taskId: z.string().optional(),
+    to: agent, message: z.string(), taskId: z.string().optional(), wake: z.boolean().optional(),
   }, async (args) => call(a.agentMessage, args));
+
+  // ---- wake / balance / context ----
+  server.tool('agent_wake', 'Wake a target AI: queue a wake ticket in its shared inbox and try to bring its window forward.', {
+    agent, taskId: z.string().optional(), message: z.string().optional(),
+    from: z.enum(['workbuddy', 'dsh', 'zcode', 'antigravity', 'ceo']).optional(),
+    launch: z.boolean().optional(),
+  }, async (args) => call(a.agentWake, args));
+  server.tool('agent_wake_offline', 'Wake every AI that is currently offline (best effort).', {
+    message: z.string().optional(),
+    from: z.enum(['workbuddy', 'dsh', 'zcode', 'antigravity', 'ceo']).optional(),
+    launch: z.boolean().optional(),
+  }, async (args) => call(a.wakeAllOffline, args));
+  server.tool('balance_query', 'Query AI balance/quota. DSH reads a local cache; others report status and next step. No secrets are read or printed.', {
+    agent: agent.optional(),
+  }, async (args) => call(a.balance, args));
+  server.tool('context_prepare', 'Get a compact context summary plus exact compact/new-chat actions per host.', {
+    host: z.enum(['workbuddy', 'antigravity', 'zcode']).optional(),
+  }, async (args) => call(a.contextPrepare, args));
 
   // ---- web dashboard ----
   server.tool('dashboard_open', 'Start (or get the URL of) the web dashboard.', {
@@ -176,6 +226,19 @@ export function buildServer() {
     const mod = await import('./web.js');
     const info = mod.ensureDashboard(port || 7788);
     return call(() => info);
+  });
+  server.tool('dashboard_float', 'Open a draggable always-on-top mini dashboard over the agent UI.', {
+    port: z.number().optional(),
+  }, async ({ port }) => {
+    const mod = await import('./floating.js');
+    return call(() => mod.openFloatingDashboard({ port: port || 7788 }));
+  });
+  server.tool('dashboard_native', 'Open the native Windows desktop widget (no browser, always-on-top, draggable).', {}, async () => {
+    const mod = await import('./native-ui.js');
+    const hub = await import('./workspace-hub.js');
+    return call(() => mod.openNativeDashboard({
+      workspace: process.env.AGENTCORP_WORKSPACE || hub.pickHubRoot(),
+    }));
   });
 
   // ---- updates / plugins ----

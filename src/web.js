@@ -67,10 +67,20 @@ export function ensureDashboard(port = 7788) {
       message: a.agentMessage,
       lock: a.fileLock,
       unlock: a.fileUnlock,
+      worklog: a.worklogAdd,
+      hub_files: a.hubFiles,
+      hub_read: a.hubFileRead,
+      repo_save: a.repoSave,
+      repo_sync: a.repoPush,
+      plugin_update: a.pluginUpdate,
+      float: async ({ port }) => (await import('./floating.js')).openFloatingDashboard({ port }),
+      native_ui: async ({ url }) => (await import('./native-ui.js')).openNativeDashboard({
+        workspace: WS, url: url || `http://localhost:${state.port || port}`,
+      }),
     };
     const fn = map[name];
     if (!fn) return send(res, 404, { error: `Unknown action ${name}` });
-    const result = fn(body);
+    const result = await fn(body);
     if (result?.error) return send(res, 400, result);
     send(res, 200, result);
   }
@@ -82,8 +92,9 @@ export function ensureDashboard(port = 7788) {
 
     try {
       // Static UI
-      if (pathname === '/' || pathname === '/index.html') {
-        const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
+      if (pathname === '/' || pathname === '/index.html' || pathname === '/mini.html') {
+        const name = pathname === '/mini.html' ? 'mini.html' : 'index.html';
+        const html = fs.readFileSync(path.join(publicDir, name), 'utf8');
         return send(res, 200, html, 'text/html; charset=utf-8');
       }
       if (pathname.startsWith('/assets/')) {
@@ -103,6 +114,13 @@ export function ensureDashboard(port = 7788) {
       if (pathname === '/api/task') return send(res, 200, a.taskGet({ taskId: urlObj.searchParams.get('id') }));
       if (pathname === '/api/file') return send(res, 200, a.fileContent({ path: urlObj.searchParams.get('path') }));
       if (pathname === '/api/diff') return send(res, 200, a.gitDiff({ path: urlObj.searchParams.get('path') || undefined }));
+      if (pathname === '/api/hub/files') return send(res, 200, a.hubFiles({
+        agent: urlObj.searchParams.get('agent') || undefined,
+        depth: Number(urlObj.searchParams.get('depth') || 2),
+      }));
+      if (pathname === '/api/hub/file') return send(res, 200, a.hubFileRead({ file: urlObj.searchParams.get('file') }));
+      if (pathname === '/api/plugins') return send(res, 200, a.pluginInfo());
+      if (pathname === '/api/repo') return send(res, 200, a.repoInfo());
       if (pathname === '/api/stream') {
         res.writeHead(200, {
           'Content-Type': 'text/event-stream',
@@ -124,11 +142,12 @@ export function ensureDashboard(port = 7788) {
     }
   });
 
+  const silent = !!process.env.AGENTCORP_SILENT;
   server.listen(port, () => {
-    console.log(`AgentCorp dashboard: http://localhost:${port}`);
+    if (!silent) console.log(`AgentCorp dashboard: http://localhost:${port}`);
   });
   server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') console.error(`Port ${port} in use. Try another port.`);
+    if (!silent && e.code === 'EADDRINUSE') console.error(`Port ${port} in use. Try another port.`);
   });
   state = { port, startedAt: new Date().toISOString(), clients };
   return { ok: true, url: `http://localhost:${port}`, port, version: VERSION, alreadyRunning: false };

@@ -14,6 +14,7 @@ import { Store } from './src/store.js';
 import { createActions } from './src/actions.js';
 import { AGENTS, VERSION } from './src/constants.js';
 import { pickHubRoot } from './src/workspace-hub.js';
+import { maybeAutoOpenDashboard } from './src/autoopen.js';
 
 export const name = 'agentcorp';
 
@@ -106,6 +107,14 @@ const DEFS = [
     const mod = await import('./src/web.js');
     return mod.ensureDashboard(x.port || 7788);
   } },
+  { n: 'dashboard_float', d: 'Open a draggable always-on-top mini dashboard over the agent UI.', p: { port: num() }, r: [], f: async (x) => {
+    const mod = await import('./src/floating.js');
+    return mod.openFloatingDashboard({ port: x.port || 7788 });
+  } },
+  { n: 'dashboard_native', d: 'Open the native Windows desktop widget (no browser, always-on-top, draggable).', p: {}, r: [], f: async () => {
+    const mod = await import('./src/native-ui.js');
+    return mod.openNativeDashboard({ workspace: WS });
+  } },
 ];
 
 export function apply(ctx) {
@@ -142,9 +151,13 @@ export function apply(ctx) {
     ctx.effect(() => systemPrompt.section({
       name: 'agentcorp:bus',
       order: 3102,
-      text: 'AgentCorp collaboration bus is installed. Call agent_hello(agent, role) on startup to appear online. Use agent_roster to see which AIs are online. Use org_goal/task_plan/task_assign to run the CEO->PM->coder->reviewer pipeline. Shared files live in the agent-link hub; use hub_files/hub_file_read to inspect other agents\' work, and worklog_add/repo_save to persist work. Version ' + VERSION + '.',
+      text: 'AgentCorp collaboration bus is installed. Call agent_hello(agent, role) on startup to appear online. Use agent_roster to see which AIs are online. Use org_goal/task_plan/task_assign to run the CEO->PM->coder->reviewer pipeline. Call dashboard_native for the native always-on-top desktop widget (no browser), or dashboard_float for the browser fallback. Shared files live in the agent-link hub; use hub_files/hub_file_read to inspect other agents\' work, and worklog_add/repo_save to persist work. Version ' + VERSION + '.',
     }), 'agentcorp prompt section');
   }
+
+  // First install / first run: pop the draggable floating console automatically.
+  // The one-time marker lives in the shared hub, so all agents open it only once.
+  void maybeAutoOpenDashboard({ workspace: WS, trigger: 'dsh-plugin' });
 
   return () => { /* disposer: tools registrations are disposed via ctx.effect */ };
 }

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCorp Floating</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="mini-page">
+<div class="mini-head">
+  <div class="brand mini-brand"><span class="logo">AC</span><span>AgentCorp 浮窗</span></div>
+  <div class="mini-head-actions">
+    <button class="btn sm" id="btnFull" title="打开完整看板">完整</button>
+    <button class="btn sm" id="btnClose" title="关闭浮窗">×</button>
+  </div>
+</div>
+<div class="mini-body">
+  <div class="mini-goal" id="miniGoal">加载中…</div>
+  <div class="mini-section-title">在线状态</div>
+  <div id="miniAgents" class="mini-agents"></div>
+  <div class="mini-section-title">需要你关注</div>
+  <div id="miniAlerts" class="mini-alerts"></div>
+  <div class="mini-hint">拖动窗口顶部标题栏可移动到任意 Agent 界面上</div>
+  <div class="mini-footer"><span id="miniTime">—</span><span id="miniLive">● 实时</span></div>
+</div>
+<script src="/assets/mini.js"></script>
+</body>
+</html>

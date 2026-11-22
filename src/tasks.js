@@ -37,6 +37,10 @@ export function taskSummary(t) {
     priority: t.priority,
     files: t.files,
     dependsOn: t.dependsOn,
+    createdAt: t.createdAt || null,
+    updatedAt: t.updatedAt || null,
+    submittedAt: t.result?.at || null,
+    reviewedAt: t.review?.at || null,
   };
 }
 

@@ -6,13 +6,20 @@ import { execFileSync } from 'node:child_process';
 import { createTask, taskSummary, findTasks } from './tasks.js';
 import { routingAdvice, suggestAssignee, detectConflicts } from './router.js';
 import { TASK_STATUS, TASK_TYPE, AGENTS, VERSION, PRESENCE_TTL_MS, now } from './constants.js';
-import { pluginStatus, doctor as doctorRaw, alignWorkspaces } from './updater.js';
+import {
+  pluginStatus as pluginStatusRaw, updatePlugin as updatePluginRaw,
+  localVersion, doctor as doctorRaw, alignWorkspaces,
+} from './updater.js';
 import {
   pickHubRoot, initHub, hubTree, hubRead, hubWrite, worklogWrite,
   repoStatus, repoCommit, repoLog, repoSetRemote, repoSync,
 } from './workspace-hub.js';
+import { wakeAgent, wakeOffline } from './wake.js';
+import { balance as balanceProbe } from './quota.js';
+import { contextStatus, buildSummary, estimateTokens } from './context.js';
 
 const err = (message) => ({ error: message });
+const STALL_MS = 15 * 60 * 1000; // “进行中”超过这个时间没有更新就提醒 CEO
 
 export function createActions(store, workspace) {
   // ---- presence: which AIs are actually installed and online ----
@@ -40,7 +47,7 @@ export function createActions(store, workspace) {
   function agentRoster() {
     const s = store.readState();
     const install = {};
-    for (const p of pluginStatus(workspace)) install[p.id] = p;
+    for (const p of pluginStatusRaw(workspace)) install[p.id] = p;
     const tasks = Object.values(s.tasks);
     const ts = Date.now();
     const agents = Object.keys(AGENTS).map(id => {
@@ -118,6 +125,20 @@ export function createActions(store, workspace) {
   function repoHistory({ limit } = {}) { return repoLog({ root: HUB, limit }); }
   function repoRemoteSet({ url } = {}) { return repoSetRemote({ root: HUB, url }); }
   function repoPush({ message } = {}) { return repoSync({ root: HUB, message }); }
+
+  function pluginInfo() {
+    return {
+      version: localVersion(),
+      constantsVersion: VERSION,
+      plugins: pluginStatusRaw(workspace),
+      note: 'installed = MCP config entry present; DSH native bundle is installed through the DSH plugin manager.',
+    };
+  }
+  function pluginUpdate({ id } = {}) {
+    const r = updatePluginRaw(id, workspace);
+    if (r.ok) store.emit('plugin_updated', { plugin: id, version: r.version }, 'ceo');
+    return r;
+  }
 
   function orgInfo() {
     const s = store.readState();
@@ -349,9 +370,41 @@ export function createActions(store, workspace) {
   function fileLock({ path: p, agent }) { return store.acquireLock(p, agent); }
   function fileUnlock({ path: p, agent }) { return store.releaseLock(p, agent); }
 
-  function agentMessage({ from, to, message, taskId }) {
+  function agentMessage({ from, to, message, taskId, wake }) {
     store.emit('message', { from, to, message, taskId: taskId || null }, from);
-    return { delivered: true, to, message, note: 'Visible via org_events filtered by recipient.' };
+    let wakeResult = null;
+    if (wake) {
+      wakeResult = wakeAgent({ agent: to, from, message, taskId, workspace: HUB });
+      store.emit('agent_wake', { agent: to, from, taskId: taskId || null, launched: wakeResult.launched }, from);
+    }
+    return {
+      delivered: true, to, message, wake: wakeResult,
+      note: wake
+        ? 'Message logged + wake ticket queued; app window focus is best-effort.'
+        : 'Visible via org_events filtered by recipient. Pass wake=true to nudge the target.',
+    };
+  }
+
+  function agentWake({ agent, taskId, message, from, launch }) {
+    const r = wakeAgent({
+      agent, taskId, message, from,
+      launch: launch !== false,
+      workspace: HUB,
+    });
+    if (r.ok) store.emit('agent_wake', { agent, from: from || 'ceo', taskId: taskId || null, launched: r.launched }, from || 'ceo');
+    return r;
+  }
+
+  function wakeAllOffline({ message, from, launch } = {}) {
+    const r = wakeOffline(agentRoster(), { message, from, launch: launch !== false, workspace: HUB });
+    if (r.targets.length) store.emit('agent_wake_batch', { targets: r.targets, from: from || 'ceo' }, from || 'ceo');
+    return r;
+  }
+
+  function balance({ agent } = {}) { return balanceProbe({ agent }); }
+
+  function contextPrepare({ host } = {}) {
+    return contextStatus({ d: dashboard(), host });
   }
 
   // Aggregated dashboard payload for the web UI.
@@ -374,13 +427,20 @@ export function createActions(store, workspace) {
       };
     }
     const artifacts = [];
+    const stalled = [];
+    const ts = Date.now();
     for (const t of tasks) {
       for (const a of (t.result?.artifacts || [])) {
         artifacts.push({ ...a, taskId: t.id, taskTitle: t.title, author: t.assignee, review: t.review?.verdict || 'pending' });
       }
+      if (t.status === TASK_STATUS.DOING && t.updatedAt && (ts - Date.parse(t.updatedAt)) > STALL_MS) {
+        stalled.push({ ...taskSummary(t), idleMs: ts - Date.parse(t.updatedAt) });
+      }
     }
     return {
-      goal: s.goal, stats: s.stats, columns, perAgent, roster,
+      goal: s.goal, stats: s.stats, columns, perAgent, roster, stalled,
+      hub: hubInfo(), repo: repoInfo(), plugins: pluginInfo(),
+      workspace, version: VERSION,
       conflicts: detectConflicts(s), locks: store.listLocks(),
       events: store.tailEvents(120), artifacts,
       latestSeq: store.tailEvents(1)[0]?.seq || 0,
@@ -416,5 +476,7 @@ export function createActions(store, workspace) {
     fileContent, gitDiff, touchPresence, agentRoster, doctor, workspaceAlign,
     hubInit, hubInfo, hubFiles, hubFileRead, hubFileWrite, worklogAdd,
     repoInfo, repoSave, repoHistory, repoRemoteSet, repoPush,
+    pluginInfo, pluginUpdate,
+    agentWake, wakeAllOffline, balance, contextPrepare,
   };
 }
